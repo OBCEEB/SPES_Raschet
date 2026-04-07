@@ -38,6 +38,8 @@ namespace SPES_Raschet
         private SessionState? pendingSessionRestore;
         private bool isMapPanning = false;
         private Point mapPanStartPoint;
+        private Panel mapToolsPanel = null!;
+        private Label mapHintLabel = null!;
 
         public Form1()
         {
@@ -70,10 +72,10 @@ namespace SPES_Raschet
             // Подписки таблицы
             this.dataGridViewData.CellFormatting += DataGridViewData_CellFormatting;
             this.FormClosing += (_, _) => SaveCurrentSessionState();
+            this.Shown += (_, _) => ShowRestorePromptIfNeeded();
 
             InitializeProgramAndLoadData();
             pendingSessionRestore = SessionStateService.TryLoad();
-            ShowRestorePromptIfNeeded();
         }
 
         private void ApplyModernDesign()
@@ -184,6 +186,7 @@ namespace SPES_Raschet
             };
             mapPictureBox.Cursor = Cursors.Hand;
             mapPictureBox.TabStop = true;
+            InitializeMapToolsOverlay();
 
             InitializeHelpTab();
 
@@ -229,13 +232,110 @@ namespace SPES_Raschet
                 ForeColor = AppTheme.TextColor,
                 Dock = DockStyle.Right
             };
-            btnDismiss.Click += (_, _) => restorePanel.Visible = false;
+            btnDismiss.Click += (_, _) =>
+            {
+                restorePanel.Visible = false;
+                PositionMapToolsOverlay();
+            };
 
             restorePanel.Controls.Add(btnRestore);
             restorePanel.Controls.Add(btnDismiss);
             restorePanel.Controls.Add(restoreLabel);
             tabPageCalculator.Controls.Add(restorePanel);
             restorePanel.BringToFront();
+        }
+
+        private void InitializeMapToolsOverlay()
+        {
+            mapToolsPanel = new Panel
+            {
+                Size = new Size(220, 112),
+                BackColor = Color.FromArgb(245, 250, 255),
+                BorderStyle = BorderStyle.FixedSingle
+            };
+
+            var btnZoomIn = new Button
+            {
+                Text = "+",
+                Width = 42,
+                Height = 30,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.White,
+                ForeColor = AppTheme.TextColor,
+                Location = new Point(10, 8)
+            };
+            btnZoomIn.FlatAppearance.BorderColor = AppTheme.BorderColor;
+            btnZoomIn.Click += (_, _) =>
+            {
+                mapRenderer.Zoom(1.12);
+                mapPictureBox.Invalidate();
+            };
+
+            var btnZoomOut = new Button
+            {
+                Text = "-",
+                Width = 42,
+                Height = 30,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.White,
+                ForeColor = AppTheme.TextColor,
+                Location = new Point(58, 8)
+            };
+            btnZoomOut.FlatAppearance.BorderColor = AppTheme.BorderColor;
+            btnZoomOut.Click += (_, _) =>
+            {
+                mapRenderer.Zoom(0.90);
+                mapPictureBox.Invalidate();
+            };
+
+            var btnResetView = new Button
+            {
+                Text = "Сброс",
+                Width = 106,
+                Height = 30,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = AppTheme.PrimaryColor,
+                ForeColor = Color.White,
+                Location = new Point(106, 8)
+            };
+            btnResetView.FlatAppearance.BorderSize = 0;
+            btnResetView.Click += (_, _) =>
+            {
+                mapRenderer.ResetView();
+                mapPictureBox.Invalidate();
+            };
+
+            mapHintLabel = new Label
+            {
+                AutoSize = false,
+                Width = 198,
+                Height = 62,
+                Location = new Point(10, 42),
+                Text = "Колесо: масштаб\nСредняя кнопка: перетаскивание\nДвойной клик: сброс",
+                ForeColor = AppTheme.MutedTextColor,
+                Font = new Font("Segoe UI", 8.5f),
+                TextAlign = ContentAlignment.TopLeft
+            };
+
+            mapToolsPanel.Controls.Add(btnZoomIn);
+            mapToolsPanel.Controls.Add(btnZoomOut);
+            mapToolsPanel.Controls.Add(btnResetView);
+            mapToolsPanel.Controls.Add(mapHintLabel);
+            mapPictureBox.Controls.Add(mapToolsPanel);
+            mapToolsPanel.BringToFront();
+
+            PositionMapToolsOverlay();
+            mapPictureBox.Resize += (_, _) => PositionMapToolsOverlay();
+        }
+
+        private void PositionMapToolsOverlay()
+        {
+            if (mapToolsPanel == null) return;
+            int topOffset = restorePanel != null && restorePanel.Visible ? 58 : 16;
+
+            mapToolsPanel.Location = new Point(
+                Math.Max(8, mapPictureBox.Width - mapToolsPanel.Width - 16),
+                topOffset);
         }
 
         private Button CreateNavButton(string text, int tabIndex)
@@ -632,6 +732,8 @@ namespace SPES_Raschet
             if (pendingSessionRestore == null) return;
             if (string.IsNullOrWhiteSpace(pendingSessionRestore.SettlementName)) return;
             restorePanel.Visible = true;
+            if (IsHandleCreated) BeginInvoke((Action)PositionMapToolsOverlay);
+            else PositionMapToolsOverlay();
         }
 
         private void RestorePreviousSession()
@@ -639,12 +741,14 @@ namespace SPES_Raschet
             if (pendingSessionRestore == null)
             {
                 restorePanel.Visible = false;
+                BeginInvoke((Action)PositionMapToolsOverlay);
                 return;
             }
 
             var state = pendingSessionRestore;
             pendingSessionRestore = null;
             restorePanel.Visible = false;
+            BeginInvoke((Action)PositionMapToolsOverlay);
 
             var settlement = GeoDataHandler.SettlementList.FirstOrDefault(x =>
                 x.CityOrSettlement == state.SettlementName &&
