@@ -6,7 +6,7 @@ using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 using System.Diagnostics;
-using SPES_Raschet.Session;
+using SPES_Raschet.Services;
 
 namespace SPES_Raschet
 {
@@ -35,9 +35,8 @@ namespace SPES_Raschet
         private Button btnNavHelp = null!;
         private Panel navIndicator = null!; // Полоска активной вкладки
         private Panel restorePanel = null!;
-        private SessionState? pendingSessionRestore;
-        private bool isMapPanning = false;
-        private Point mapPanStartPoint;
+        private readonly MapInteractionService mapInteraction = new MapInteractionService();
+        private readonly SessionCoordinator sessionCoordinator = new SessionCoordinator();
         private Panel mapToolsPanel = null!;
         private Label mapHintLabel = null!;
 
@@ -75,7 +74,6 @@ namespace SPES_Raschet
             this.Shown += (_, _) => ShowRestorePromptIfNeeded();
 
             InitializeProgramAndLoadData();
-            pendingSessionRestore = SessionStateService.TryLoad();
         }
 
         private void ApplyModernDesign()
@@ -468,50 +466,6 @@ namespace SPES_Raschet
             if (comboSelectTable.Items.Count > 0) comboSelectTable.SelectedIndex = 0;
         }
 
-        // ... (Код таблиц DataTables - без изменений) ...
-        private DataTable FlattenIrradianceDataToDataTable()
-        {
-            DataTable dt = new DataTable("IrradianceData");
-            if (DataStore.IrradianceList == null || !DataStore.IrradianceList.Any()) return dt;
-            var allKeys = DataStore.IrradianceList.SelectMany(d => d.Values.Keys).Distinct().OrderBy(key => key).ToList();
-            dt.Columns.Add("Широта, °", typeof(double));
-            dt.Columns.Add("Час", typeof(int));
-            foreach (string key in allKeys) dt.Columns.Add(key, typeof(double));
-            foreach (var item in DataStore.IrradianceList)
-            {
-                DataRow row = dt.NewRow();
-                row["Широта, °"] = item.Latitude;
-                row["Час"] = item.StartHour;
-                foreach (string key in allKeys) row[key] = item.Values.TryGetValue(key, out double value) ? value : (object)DBNull.Value;
-                dt.Rows.Add(row);
-            }
-            return dt;
-        }
-
-        private DataTable FlattenSunPositionToDataTable()
-        {
-            DataTable dt = new DataTable("SunPositionData");
-            dt.Columns.Add("Широта, °", typeof(double));
-            dt.Columns.Add("Час", typeof(int));
-            dt.Columns.Add("Высота (h), °", typeof(double));
-            dt.Columns.Add("Азимут (Ac), °", typeof(double));
-            if (DataStore.SunPositionList != null)
-                foreach (var item in DataStore.SunPositionList)
-                    dt.Rows.Add(item.Longitude, item.StartHour, item.Altitude, item.Azimuth);
-            return dt;
-        }
-
-        private DataTable FlattenDailyTotalToDataTable()
-        {
-            DataTable dt = new DataTable("DailyTotalData");
-            dt.Columns.Add("Широта, °", typeof(double));
-            dt.Columns.Add("Суточный итог, МДж/м²", typeof(double));
-            if (DataStore.DailyTotalList != null)
-                foreach (var item in DataStore.DailyTotalList)
-                    dt.Rows.Add(item.Latitude, item.DailyTotalHorizontalIrradiance);
-            return dt;
-        }
-
         // ... (Логика UI Таблицы) ...
 
         private void comboSelectTable_SelectedIndexChanged(object sender, EventArgs e)
@@ -524,9 +478,9 @@ namespace SPES_Raschet
             {
                 switch (selectedTable)
                 {
-                    case "Почасовая радиация (Таблица 1)": currentDataTable = FlattenIrradianceDataToDataTable(); break;
-                    case "Положение Солнца (Таблица 2)": currentDataTable = FlattenSunPositionToDataTable(); break;
-                    case "Суточные итоги (Таблица 3)": currentDataTable = FlattenDailyTotalToDataTable(); break;
+                    case "Почасовая радиация (Таблица 1)": currentDataTable = TableViewDataService.FlattenIrradianceData(); break;
+                    case "Положение Солнца (Таблица 2)": currentDataTable = TableViewDataService.FlattenSunPositionData(); break;
+                    case "Суточные итоги (Таблица 3)": currentDataTable = TableViewDataService.FlattenDailyTotalData(); break;
                 }
                 if (currentDataTable != null)
                 {
@@ -579,35 +533,21 @@ namespace SPES_Raschet
 
         private void mapPictureBox_MouseMove(object? sender, MouseEventArgs e)
         {
-            if (isMapPanning)
+            if (mapInteraction.IsPanning)
             {
-                var dx = e.X - mapPanStartPoint.X;
-                var dy = e.Y - mapPanStartPoint.Y;
-                mapPanStartPoint = e.Location;
-                mapRenderer.Pan(dx, dy);
+                var delta = mapInteraction.ConsumePanDelta(e.Location);
+                mapRenderer.Pan(delta.X, delta.Y);
                 mapPictureBox.Invalidate();
                 return;
             }
 
             if (allRegionBoundaries == null) return;
             Point unrotatedPoint = UntransformPoint(e.Location, mapPictureBox.Size);
-            List<double>? geoPoint = mapRenderer.PixelToGeo(unrotatedPoint);
-            if (geoPoint == null) return;
-
-            string? newHoverRegion = null;
-            foreach (var regionEntry in allRegionBoundaries)
-            {
-                foreach (var polygonEntry in regionEntry.Value)
-                {
-                    if (polygonEntry.Value != null && polygonEntry.Value.Count > 1)
-                        if (mapRenderer.IsPointInPolygon(geoPoint, polygonEntry.Value))
-                        {
-                            newHoverRegion = regionEntry.Key;
-                            break;
-                        }
-                }
-                if (newHoverRegion != null) break;
-            }
+            string? newHoverRegion = mapInteraction.FindHoverRegion(
+                mapRenderer,
+                unrotatedPoint,
+                mapPictureBox.Size,
+                allRegionBoundaries);
 
             if (newHoverRegion != hoverRegionName)
             {
@@ -624,10 +564,10 @@ namespace SPES_Raschet
 
         private void mapPictureBox_MouseClick(object? sender, MouseEventArgs e)
         {
-            if (isMapPanning || e.Button != MouseButtons.Left) return;
+            if (mapInteraction.IsPanning || e.Button != MouseButtons.Left) return;
 
             Point untransformedPoint = UntransformPoint(e.Location, mapPictureBox.Size);
-            string? clickedRegion = mapRenderer.GetRegionNameFromScreenPoint(untransformedPoint, allRegionBoundaries!);
+            string? clickedRegion = mapInteraction.FindRegionAtPoint(mapRenderer, untransformedPoint, allRegionBoundaries);
             if (clickedRegion != null)
             {
                 if (selectedRegion != clickedRegion)
@@ -641,17 +581,15 @@ namespace SPES_Raschet
 
         private void mapPictureBox_MouseDown(object? sender, MouseEventArgs e)
         {
-            if (e.Button != MouseButtons.Middle) return;
-            isMapPanning = true;
-            mapPanStartPoint = e.Location;
+            mapInteraction.BeginPan(e.Button, e.Location);
+            if (!mapInteraction.IsPanning) return;
             mapPictureBox.Cursor = Cursors.SizeAll;
             mapToolTip.Hide(mapPictureBox);
         }
 
         private void mapPictureBox_MouseUp(object? sender, MouseEventArgs e)
         {
-            if (e.Button != MouseButtons.Middle) return;
-            isMapPanning = false;
+            mapInteraction.EndPan(e.Button);
             mapPictureBox.Cursor = Cursors.Hand;
         }
 
@@ -729,8 +667,7 @@ namespace SPES_Raschet
 
         private void ShowRestorePromptIfNeeded()
         {
-            if (pendingSessionRestore == null) return;
-            if (string.IsNullOrWhiteSpace(pendingSessionRestore.SettlementName)) return;
+            if (!sessionCoordinator.HasPendingState) return;
             restorePanel.Visible = true;
             if (IsHandleCreated) BeginInvoke((Action)PositionMapToolsOverlay);
             else PositionMapToolsOverlay();
@@ -738,22 +675,18 @@ namespace SPES_Raschet
 
         private void RestorePreviousSession()
         {
-            if (pendingSessionRestore == null)
+            var state = sessionCoordinator.ConsumePendingState();
+            if (state == null)
             {
                 restorePanel.Visible = false;
                 BeginInvoke((Action)PositionMapToolsOverlay);
                 return;
             }
 
-            var state = pendingSessionRestore;
-            pendingSessionRestore = null;
             restorePanel.Visible = false;
             BeginInvoke((Action)PositionMapToolsOverlay);
 
-            var settlement = GeoDataHandler.SettlementList.FirstOrDefault(x =>
-                x.CityOrSettlement == state.SettlementName &&
-                Math.Abs(x.Latitude - state.Latitude) < 0.0001 &&
-                Math.Abs(x.Longitude - state.Longitude) < 0.0001);
+            var settlement = sessionCoordinator.ResolveSettlement(state);
 
             if (settlement != null)
             {
@@ -773,20 +706,11 @@ namespace SPES_Raschet
 
         private void SaveCurrentSessionState()
         {
-            if (currentSettlement == null) return;
-
-            var state = new SessionState
-            {
-                SettlementName = currentSettlement.CityOrSettlement,
-                Region = currentSettlement.Region,
-                Latitude = currentSettlement.Latitude,
-                Longitude = currentSettlement.Longitude,
-                TimeZoneOffset = currentSettlement.TimeZoneOffset,
-                NavTabIndex = tabControl1.SelectedIndex,
-                SelectedTableIndex = comboSelectTable.SelectedIndex,
-                FilterText = filterTextBox.Text
-            };
-            SessionStateService.Save(state);
+            sessionCoordinator.Save(
+                currentSettlement,
+                tabControl1.SelectedIndex,
+                comboSelectTable.SelectedIndex,
+                filterTextBox.Text);
         }
 
         private void CalcButton_Click(object? sender, EventArgs e)
