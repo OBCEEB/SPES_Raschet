@@ -23,10 +23,14 @@ namespace SPES_Raschet
         private readonly Pen regionPen = new Pen(Color.FromArgb(126, 133, 143), 1.25f);
         private readonly SolidBrush defaultBrush = new SolidBrush(Color.FromArgb(222, 226, 231));
         private readonly SolidBrush hoverBrush = new SolidBrush(Color.FromArgb(109, 186, 234));
+        private readonly SolidBrush selectedBrush = new SolidBrush(Color.FromArgb(117, 186, 155));
 
         // Параметры последней проекции
         private double lastScaleX = 1.0, lastScaleY = 1.0, lastDx = 0.0, lastDy = 0.0;
         private double lastMinLon = 0.0, lastMaxLat = 0.0;
+        private double userZoom = 1.0;
+        private double userPanX = 0.0;
+        private double userPanY = 0.0;
 
         /// <summary>
         /// Нормализует долготу, чтобы Чукотка (-170) стала продолжением России (190).
@@ -40,7 +44,8 @@ namespace SPES_Raschet
             Graphics graphics,
             Size targetSize,
             Dictionary<string, Dictionary<string, List<List<double>>>> allBoundaries,
-            string? hoverRegionName = null)
+            string? hoverRegionName = null,
+            string? selectedRegionName = null)
         {
             if (allBoundaries == null || !allBoundaries.Any()) return;
 
@@ -51,6 +56,12 @@ namespace SPES_Raschet
             // Передаем диапазоны координат и размеры экрана
             var (finalScaleX, finalScaleY, dx, dy) = CalculateProjectionParams(
                 maxLon - minLon, maxLat - minLat, targetSize.Width, targetSize.Height);
+
+            // User transform (zoom + pan) applied on top of fit-to-screen projection.
+            finalScaleX *= userZoom;
+            finalScaleY *= userZoom;
+            dx = targetSize.Width / 2.0 - (targetSize.Width / 2.0 - dx) * userZoom + userPanX;
+            dy = targetSize.Height / 2.0 - (targetSize.Height / 2.0 - dy) * userZoom + userPanY;
 
             // Сохраняем для кликов
             lastScaleX = finalScaleX;
@@ -81,7 +92,9 @@ namespace SPES_Raschet
 
                     if (screenPoints.Count > 1)
                     {
-                        SolidBrush currentBrush = regionName == hoverRegionName ? hoverBrush : defaultBrush;
+                        SolidBrush currentBrush = defaultBrush;
+                        if (regionName == selectedRegionName) currentBrush = selectedBrush;
+                        if (regionName == hoverRegionName) currentBrush = hoverBrush;
                         graphics.FillPolygon(currentBrush, screenPoints.ToArray());
                         graphics.DrawPolygon(regionPen, screenPoints.ToArray());
                     }
@@ -230,6 +243,26 @@ namespace SPES_Raschet
             return new List<double> { lon, lat };
         }
 
+        public void Zoom(double delta)
+        {
+            userZoom *= delta;
+            if (userZoom < 0.7) userZoom = 0.7;
+            if (userZoom > 4.0) userZoom = 4.0;
+        }
+
+        public void Pan(int deltaX, int deltaY)
+        {
+            userPanX += deltaX;
+            userPanY += deltaY;
+        }
+
+        public void ResetView()
+        {
+            userZoom = 1.0;
+            userPanX = 0.0;
+            userPanY = 0.0;
+        }
+
         public string? GetRegionNameFromScreenPoint(
             Point screenPoint,
             Dictionary<string, Dictionary<string, List<List<double>>>> allBoundaries)
@@ -265,6 +298,7 @@ namespace SPES_Raschet
             regionPen.Dispose();
             defaultBrush.Dispose();
             hoverBrush.Dispose();
+            selectedBrush.Dispose();
         }
     }
 }

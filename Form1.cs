@@ -36,6 +36,8 @@ namespace SPES_Raschet
         private Panel navIndicator = null!; // Полоска активной вкладки
         private Panel restorePanel = null!;
         private SessionState? pendingSessionRestore;
+        private bool isMapPanning = false;
+        private Point mapPanStartPoint;
 
         public Form1()
         {
@@ -55,6 +57,15 @@ namespace SPES_Raschet
             this.FormClosing += (s, e) => mapRenderer?.Dispose();
             this.mapPictureBox.MouseMove += mapPictureBox_MouseMove;
             this.mapPictureBox.MouseClick += mapPictureBox_MouseClick;
+            this.mapPictureBox.MouseDown += mapPictureBox_MouseDown;
+            this.mapPictureBox.MouseUp += mapPictureBox_MouseUp;
+            this.mapPictureBox.MouseWheel += mapPictureBox_MouseWheel;
+            this.mapPictureBox.MouseEnter += (_, _) => mapPictureBox.Focus();
+            this.mapPictureBox.DoubleClick += (_, _) =>
+            {
+                mapRenderer.ResetView();
+                mapPictureBox.Invalidate();
+            };
 
             // Подписки таблицы
             this.dataGridViewData.CellFormatting += DataGridViewData_CellFormatting;
@@ -171,6 +182,8 @@ namespace SPES_Raschet
                     (tabPageCalculator.Width - btnCalculate.Width) / 2,
                     tabPageCalculator.Height - btnCalculate.Height - 28);
             };
+            mapPictureBox.Cursor = Cursors.Hand;
+            mapPictureBox.TabStop = true;
 
             InitializeHelpTab();
 
@@ -461,11 +474,21 @@ namespace SPES_Raschet
         private void mapPictureBox_Paint(object? sender, PaintEventArgs e)
         {
             if (allRegionBoundaries != null)
-                mapRenderer.DrawAllRegions(e.Graphics, mapPictureBox.Size, allRegionBoundaries, hoverRegionName);
+                mapRenderer.DrawAllRegions(e.Graphics, mapPictureBox.Size, allRegionBoundaries, hoverRegionName, selectedRegion);
         }
 
         private void mapPictureBox_MouseMove(object? sender, MouseEventArgs e)
         {
+            if (isMapPanning)
+            {
+                var dx = e.X - mapPanStartPoint.X;
+                var dy = e.Y - mapPanStartPoint.Y;
+                mapPanStartPoint = e.Location;
+                mapRenderer.Pan(dx, dy);
+                mapPictureBox.Invalidate();
+                return;
+            }
+
             if (allRegionBoundaries == null) return;
             Point unrotatedPoint = UntransformPoint(e.Location, mapPictureBox.Size);
             List<double>? geoPoint = mapRenderer.PixelToGeo(unrotatedPoint);
@@ -501,6 +524,8 @@ namespace SPES_Raschet
 
         private void mapPictureBox_MouseClick(object? sender, MouseEventArgs e)
         {
+            if (isMapPanning || e.Button != MouseButtons.Left) return;
+
             Point untransformedPoint = UntransformPoint(e.Location, mapPictureBox.Size);
             string? clickedRegion = mapRenderer.GetRegionNameFromScreenPoint(untransformedPoint, allRegionBoundaries!);
             if (clickedRegion != null)
@@ -512,6 +537,28 @@ namespace SPES_Raschet
                 }
                 ShowSettlementsForRegion(clickedRegion);
             }
+        }
+
+        private void mapPictureBox_MouseDown(object? sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Middle) return;
+            isMapPanning = true;
+            mapPanStartPoint = e.Location;
+            mapPictureBox.Cursor = Cursors.SizeAll;
+            mapToolTip.Hide(mapPictureBox);
+        }
+
+        private void mapPictureBox_MouseUp(object? sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Middle) return;
+            isMapPanning = false;
+            mapPictureBox.Cursor = Cursors.Hand;
+        }
+
+        private void mapPictureBox_MouseWheel(object? sender, MouseEventArgs e)
+        {
+            mapRenderer.Zoom(e.Delta > 0 ? 1.12 : 0.90);
+            mapPictureBox.Invalidate();
         }
 
         private Point UntransformPoint(Point originalPoint, Size controlSize)
