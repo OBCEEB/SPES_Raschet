@@ -63,6 +63,10 @@ namespace SPES_Raschet
         {
             this.BackColor = AppTheme.BackgroundColor;
             this.Font = AppTheme.MainFont;
+            statusStrip1.BackColor = Color.White;
+            statusStrip1.SizingGrip = false;
+            statusLabel.ForeColor = AppTheme.TextColor;
+            statusLabel.Margin = new Padding(8, 3, 0, 2);
 
             // 1. Настройка TabControl (Скрываем стандартные заголовки)
             tabControl1.Appearance = TabAppearance.FlatButtons;
@@ -84,14 +88,12 @@ namespace SPES_Raschet
                 Dock = DockStyle.Left,
                 Width = 220,
                 BackColor = Color.White,
-                Padding = new Padding(0, 0, 0, 0)
+                Padding = new Padding(0)
             };
-            // Тень или разделитель справа
-            Panel border = new Panel { Dock = DockStyle.Right, Width = 1, BackColor = Color.LightGray };
+            Panel border = new Panel { Dock = DockStyle.Right, Width = 1, BackColor = AppTheme.BorderColor };
             panelMenu.Controls.Add(border);
 
-            // Логотип/Заголовок
-            panelLogo = new Panel { Dock = DockStyle.Top, Height = 80 };
+            panelLogo = new Panel { Dock = DockStyle.Bottom, Height = 120 };
             Label lblTitle = new Label
             {
                 Text = "СПЭС\nРасчет",
@@ -114,47 +116,60 @@ namespace SPES_Raschet
 
             panelMenu.Controls.Add(btnNavHelp);
             panelMenu.Controls.Add(btnNavData);
-            panelMenu.Controls.Add(btnNavMap); // Добавляем в обратном порядке из-за Dock=Top
-
-            this.Controls.Add(panelMenu); // Добавляем меню на форму
+            panelMenu.Controls.Add(btnNavMap);
+            this.Controls.Add(panelMenu);
 
             // 3. Стилизация Таблицы справочника
             AppTheme.StyleDataGridView(dataGridViewData);
+            dataGridViewData.RowTemplate.Height = 32;
+            dataGridViewData.ColumnHeadersHeight = 42;
+            dataGridViewData.GridColor = AppTheme.BorderColor;
+            dataGridViewData.DefaultCellStyle.Padding = new Padding(2);
 
-            // 4. Кнопка "Рассчитать" (Плавающая внизу карты)
+            grpControls.BackColor = Color.White;
+            grpControls.ForeColor = AppTheme.TextColor;
+            grpControls.Padding = new Padding(10, 8, 10, 8);
+            tlpControls.Padding = new Padding(0, 2, 0, 0);
+            lblSelectTable.ForeColor = AppTheme.TextColor;
+            label1.ForeColor = AppTheme.TextColor;
+
+            comboSelectTable.FlatStyle = FlatStyle.Flat;
+            comboSelectTable.BackColor = Color.White;
+            comboSelectTable.ForeColor = AppTheme.TextColor;
+
+            filterTextBox.BorderStyle = BorderStyle.FixedSingle;
+            filterTextBox.BackColor = Color.White;
+            filterTextBox.ForeColor = AppTheme.TextColor;
+
             btnCalculate = new Button
             {
                 Text = "ПОКАЗАТЬ РЕЗУЛЬТАТЫ РАСЧЕТА ➤",
-                Size = new Size(350, 50),
+                Size = new Size(360, 54),
                 BackColor = AppTheme.PrimaryColor,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 11, FontStyle.Bold),
                 Cursor = Cursors.Hand,
-                Visible = false // Скрыта пока не выбран город
+                Visible = false
             };
             btnCalculate.FlatAppearance.BorderSize = 0;
+            btnCalculate.FlatAppearance.MouseOverBackColor = AppTheme.DarkPrimary;
+            btnCalculate.FlatAppearance.MouseDownBackColor = AppTheme.DarkPrimary;
             btnCalculate.Click += CalcButton_Click;
 
-            // Размещаем кнопку на вкладке карты
-            // Чтобы она была внизу по центру, используем Panel-контейнер или Anchor
-            // Проще всего положить её в Panel поверх карты, но PictureBox перекроет.
-            // Добавим её в Controls tabPageCalculator и сделаем BringToFront
             tabPageCalculator.Controls.Add(btnCalculate);
             btnCalculate.BringToFront();
-            // Позиционирование в Resize
             tabPageCalculator.Resize += (s, e) =>
             {
                 btnCalculate.Location = new Point(
                     (tabPageCalculator.Width - btnCalculate.Width) / 2,
-                    tabPageCalculator.Height - btnCalculate.Height - 20);
+                    tabPageCalculator.Height - btnCalculate.Height - 28);
             };
 
-            // 5. Инициализация вкладки Инструкции
             InitializeHelpTab();
 
-            // Активируем первую вкладку
             SwitchTab(0, btnNavMap);
+            SetStatusNeutral("Данные геопозиции загружены.");
         }
 
         private Button CreateNavButton(string text, int tabIndex)
@@ -164,6 +179,14 @@ namespace SPES_Raschet
             btn.Dock = DockStyle.Top;
             btn.Height = 55;
             AppTheme.StyleNavButton(btn);
+            btn.MouseEnter += (_, _) =>
+            {
+                if (tabControl1.SelectedIndex != tabIndex) btn.BackColor = AppTheme.NavHoverBackColor;
+            };
+            btn.MouseLeave += (_, _) =>
+            {
+                if (tabControl1.SelectedIndex != tabIndex) btn.BackColor = Color.Transparent;
+            };
             btn.Click += (s, e) => SwitchTab(tabIndex, btn);
             return btn;
         }
@@ -174,7 +197,7 @@ namespace SPES_Raschet
             foreach (Control c in panelMenu.Controls)
                 if (c is Button b)
                 {
-                    b.ForeColor = Color.Gray;
+                    b.ForeColor = AppTheme.MutedTextColor;
                     b.BackColor = Color.Transparent;
                 }
 
@@ -230,8 +253,6 @@ namespace SPES_Raschet
             tabControl1.TabPages.Add(helpTab);
         }
 
-        // Инициализация данных и состояния основного экрана.
-
         private void InitializeProgramAndLoadData()
         {
             LoadGeoData();
@@ -250,12 +271,11 @@ namespace SPES_Raschet
             GeoDataHandler.LoadAllGeoData();
             if (GeoDataHandler.SettlementList.Any())
             {
-                statusLabel.Text = "Данные геопозиции загружены.";
+                SetStatusNeutral("Данные геопозиции загружены.");
             }
             else
             {
-                statusLabel.Text = "Не удалось загрузить геоданные.";
-                statusLabel.BackColor = Color.FromArgb(255, 235, 235);
+                SetStatusError("Не удалось загрузить геоданные.");
             }
         }
 
@@ -265,8 +285,7 @@ namespace SPES_Raschet
             if (!loadResult.Success)
             {
                 MessageBox.Show(loadResult.Message, "Ошибка загрузки данных", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                statusLabel.Text = "Ошибка загрузки расчетных данных.";
-                statusLabel.BackColor = Color.FromArgb(255, 235, 235);
+                SetStatusError("Ошибка загрузки расчетных данных.");
                 return;
             }
 
@@ -479,9 +498,29 @@ namespace SPES_Raschet
             if (currentSettlement != null)
             {
                 btnCalculate.Visible = true;
-                statusLabel.Text = $"ВЫБРАН: {currentSettlement.CityOrSettlement} ({currentSettlement.Region})";
-                statusLabel.BackColor = Color.FromArgb(220, 255, 220); // Нежно-зеленый
+                SetStatusSuccess($"Выбран: {currentSettlement.CityOrSettlement} ({currentSettlement.Region})");
             }
+        }
+
+        private void SetStatusNeutral(string message)
+        {
+            statusStrip1.BackColor = Color.White;
+            statusLabel.Text = message;
+            statusLabel.ForeColor = AppTheme.TextColor;
+        }
+
+        private void SetStatusSuccess(string message)
+        {
+            statusStrip1.BackColor = AppTheme.SuccessBackColor;
+            statusLabel.Text = message;
+            statusLabel.ForeColor = AppTheme.DarkPrimary;
+        }
+
+        private void SetStatusError(string message)
+        {
+            statusStrip1.BackColor = AppTheme.ErrorBackColor;
+            statusLabel.Text = message;
+            statusLabel.ForeColor = Color.FromArgb(139, 0, 0);
         }
 
         private void CalcButton_Click(object? sender, EventArgs e)

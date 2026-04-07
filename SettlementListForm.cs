@@ -9,6 +9,7 @@ namespace SPES_Raschet
     public class SettlementListForm : Form
     {
         private readonly DataGridView dataGridView;
+        private readonly Label captionLabel;
         public SettlementData? SelectedSettlement { get; private set; }
 
         public SettlementListForm(string regionName, List<SettlementData> settlements)
@@ -22,8 +23,20 @@ namespace SPES_Raschet
 
             // Закрытие допускается только после выбора элемента.
             this.ControlBox = false;
+            this.BackColor = AppTheme.BackgroundColor;
 
-            // Таблица со списком населенных пунктов региона.
+            captionLabel = new Label
+            {
+                Dock = DockStyle.Top,
+                Height = 44,
+                Text = "Выберите населенный пункт (двойной клик или одиночный клик по строке)",
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(14, 0, 0, 0),
+                Font = new Font("Segoe UI", 9, FontStyle.Regular),
+                ForeColor = AppTheme.MutedTextColor,
+                BackColor = Color.White
+            };
+
             dataGridView = new DataGridView
             {
                 Dock = DockStyle.Fill,
@@ -37,26 +50,30 @@ namespace SPES_Raschet
                 RowHeadersVisible = false,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 MultiSelect = false,
-                BackgroundColor = SystemColors.Control,
+                BackgroundColor = Color.White,
                 BorderStyle = BorderStyle.None,
                 CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal,
                 ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single,
                 EnableHeadersVisualStyles = false
             };
 
-            // Визуальные стили таблицы.
-            dataGridView.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(230, 230, 230);
+            dataGridView.ColumnHeadersHeight = 36;
+            dataGridView.ColumnHeadersDefaultCellStyle.BackColor = AppTheme.PrimaryColor;
+            dataGridView.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
             dataGridView.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9, FontStyle.Bold);
             dataGridView.DefaultCellStyle.Font = new Font("Segoe UI", 9);
-            dataGridView.DefaultCellStyle.SelectionBackColor = Color.FromArgb(51, 153, 255);
-            dataGridView.DefaultCellStyle.SelectionForeColor = Color.White;
-
-            dataGridView.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(245, 245, 245);
+            dataGridView.DefaultCellStyle.SelectionBackColor = AppTheme.NavActiveBackColor;
+            dataGridView.DefaultCellStyle.SelectionForeColor = AppTheme.TextColor;
+            dataGridView.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridView.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(249, 250, 251);
+            dataGridView.GridColor = AppTheme.BorderColor;
+            dataGridView.RowTemplate.Height = 30;
 
             // Выбор выполняется по клику на строку.
             dataGridView.CellClick += DataGridView_CellClick;
 
             this.Controls.Add(dataGridView);
+            this.Controls.Add(captionLabel);
 
             // Сначала показываем районные центры, затем сортируем по названию.
             var sortedSettlements = settlements
@@ -135,7 +152,7 @@ namespace SPES_Raschet
             int height = Math.Min(totalRowHeight + 40, 600);
             int widthPadding = (totalRowHeight > 600) ? 20 : 0;
 
-            this.ClientSize = new Size(500 + widthPadding, height);
+            this.ClientSize = new Size(540 + widthPadding, height + captionLabel.Height);
         }
 
         private void DataGridView_CellClick(object? sender, DataGridViewCellEventArgs e)

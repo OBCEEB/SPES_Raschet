@@ -20,9 +20,9 @@ namespace SPES_Raschet
         public const double SCALE_FACTOR_X = 0.6;
         public const double SCALE_FACTOR_Y = 1.0;
 
-        private readonly Pen regionPen = new Pen(Color.FromArgb(80, 80, 80), 1);
-        private readonly SolidBrush defaultBrush = new SolidBrush(Color.LightGray);
-        private readonly SolidBrush hoverBrush = new SolidBrush(Color.DodgerBlue);
+        private readonly Pen regionPen = new Pen(Color.FromArgb(126, 133, 143), 1.25f);
+        private readonly SolidBrush defaultBrush = new SolidBrush(Color.FromArgb(222, 226, 231));
+        private readonly SolidBrush hoverBrush = new SolidBrush(Color.FromArgb(109, 186, 234));
 
         // Параметры последней проекции
         private double lastScaleX = 1.0, lastScaleY = 1.0, lastDx = 0.0, lastDy = 0.0;

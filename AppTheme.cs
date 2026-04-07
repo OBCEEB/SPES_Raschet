@@ -7,12 +7,18 @@ namespace SPES_Raschet
     public static class AppTheme
     {
         // Палитра
-        public static Color PrimaryColor = Color.SeaGreen; // Приятный зеленый
-        public static Color DarkPrimary = Color.DarkGreen;
-        public static Color AccentColor = Color.Orange;
-        public static Color BackgroundColor = Color.FromArgb(245, 247, 249); // Очень светло-серый
+        public static Color PrimaryColor = Color.FromArgb(35, 140, 93);
+        public static Color DarkPrimary = Color.FromArgb(24, 107, 70);
+        public static Color AccentColor = Color.FromArgb(245, 158, 11);
+        public static Color BackgroundColor = Color.FromArgb(246, 248, 250);
         public static Color PanelColor = Color.White;
-        public static Color TextColor = Color.FromArgb(50, 50, 50);
+        public static Color TextColor = Color.FromArgb(32, 41, 52);
+        public static Color MutedTextColor = Color.FromArgb(105, 117, 132);
+        public static Color BorderColor = Color.FromArgb(223, 230, 237);
+        public static Color NavHoverBackColor = Color.FromArgb(240, 247, 244);
+        public static Color NavActiveBackColor = Color.FromArgb(230, 245, 238);
+        public static Color SuccessBackColor = Color.FromArgb(226, 244, 235);
+        public static Color ErrorBackColor = Color.FromArgb(255, 235, 235);
         public static Font MainFont = new Font("Segoe UI", 10F, FontStyle.Regular);
         public static Font HeaderFont = new Font("Segoe UI", 12F, FontStyle.Bold);
 
@@ -35,12 +41,12 @@ namespace SPES_Raschet
             // Строки
             grid.DefaultCellStyle.Font = MainFont;
             grid.DefaultCellStyle.ForeColor = TextColor;
-            grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(220, 240, 230); // Бледно-зеленый
+            grid.DefaultCellStyle.SelectionBackColor = NavActiveBackColor;
             grid.DefaultCellStyle.SelectionForeColor = Color.Black;
             grid.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
 
             // Зебра
-            grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(250, 250, 250);
+            grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(250, 251, 252);
 
             grid.RowHeadersVisible = false;
             grid.AllowUserToResizeRows = false;
@@ -52,18 +58,18 @@ namespace SPES_Raschet
             btn.FlatStyle = FlatStyle.Flat;
             btn.FlatAppearance.BorderSize = 0;
             btn.BackColor = Color.Transparent;
-            btn.ForeColor = Color.Gray;
+            btn.ForeColor = MutedTextColor;
             btn.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             btn.Cursor = Cursors.Hand;
             btn.TextAlign = ContentAlignment.MiddleLeft;
-            btn.Padding = new Padding(10, 0, 0, 0);
+            btn.Padding = new Padding(16, 0, 0, 0);
         }
 
         // Метод для активации кнопки меню (подсветка)
         public static void SetActiveNavButton(Button btn, Panel indicator)
         {
             btn.ForeColor = PrimaryColor;
-            btn.BackColor = Color.FromArgb(235, 250, 240);
+            btn.BackColor = NavActiveBackColor;
             // Двигаем полоску-индикатор
             indicator.Height = btn.Height;
             indicator.Top = btn.Top;

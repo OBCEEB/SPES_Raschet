@@ -35,6 +35,25 @@ namespace SPES_Raschet
         private const int DefaultMarkerSize = 0; // По умолчанию точки скрыты
         private const int VisibleMarkerSize = 7; // Размер если включен чекбокс
         private const int HoverMarkerSize = 12;  // Размер при наведении
+        private static readonly Color[] IrradianceSeriesPalette =
+        {
+            Color.FromArgb(0, 114, 178),   // Blue
+            Color.FromArgb(213, 94, 0),    // Vermillion
+            Color.FromArgb(0, 158, 115),   // Bluish green
+            Color.FromArgb(204, 121, 167), // Reddish purple
+            Color.FromArgb(86, 180, 233),  // Sky blue
+            Color.FromArgb(230, 159, 0),   // Orange
+            Color.FromArgb(153, 153, 153), // Gray
+            Color.FromArgb(52, 73, 94),    // Dark slate
+            Color.FromArgb(46, 134, 193),
+            Color.FromArgb(39, 174, 96),
+            Color.FromArgb(241, 196, 15),
+            Color.FromArgb(192, 57, 43),
+            Color.FromArgb(22, 160, 133),
+            Color.FromArgb(142, 68, 173),
+            Color.FromArgb(127, 140, 141),
+            Color.FromArgb(44, 62, 80)
+        };
 
         public CalculationResultsForm(SettlementData data)
         {
@@ -52,7 +71,7 @@ namespace SPES_Raschet
             this.Text = $"Результаты расчета: {_settlement.CityOrSettlement}";
             this.Size = new Size(1300, 850);
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.BackColor = Color.WhiteSmoke;
+            this.BackColor = AppTheme.BackgroundColor;
             this.Font = new Font("Segoe UI", 9);
 
             // 1. Верхняя панель
@@ -61,14 +80,14 @@ namespace SPES_Raschet
                 Dock = DockStyle.Top,
                 Height = 80,
                 BackColor = Color.White,
-                Padding = new Padding(20, 10, 20, 10)
+                Padding = new Padding(24, 10, 24, 10)
             };
 
             titleLabel = new Label
             {
                 Text = $"{_settlement.CityOrSettlement} ({_settlement.Region})",
                 Font = new Font("Segoe UI", 16, FontStyle.Bold),
-                ForeColor = Color.FromArgb(40, 40, 40),
+                ForeColor = AppTheme.TextColor,
                 AutoSize = true,
                 Dock = DockStyle.Top
             };
@@ -77,7 +96,7 @@ namespace SPES_Raschet
             {
                 Text = "Идет расчет...",
                 Font = new Font("Segoe UI", 11, FontStyle.Regular),
-                ForeColor = Color.Gray,
+                ForeColor = AppTheme.MutedTextColor,
                 AutoSize = true,
                 Dock = DockStyle.Top,
                 Padding = new Padding(0, 5, 0, 0)
@@ -107,7 +126,7 @@ namespace SPES_Raschet
                 Orientation = Orientation.Horizontal,
                 SplitterDistance = this.Height / 2,
                 SplitterWidth = 8,
-                BackColor = Color.WhiteSmoke
+                BackColor = AppTheme.BackgroundColor
             };
 
             gridIrradiance = CreateStyledGrid();
@@ -146,6 +165,7 @@ namespace SPES_Raschet
                 Text = "Фильтр направлений",
                 Dock = DockStyle.Fill,
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                ForeColor = AppTheme.TextColor,
                 BackColor = Color.White
             };
 
@@ -164,14 +184,14 @@ namespace SPES_Raschet
                 AutoSize = true,
                 Location = new Point(35, 220),
                 Font = new Font("Segoe UI", 8, FontStyle.Regular),
-                ForeColor = Color.Gray
+                ForeColor = AppTheme.MutedTextColor
             };
 
             Panel separator = new Panel
             {
                 Size = new Size(200, 1),
                 Location = new Point(25, 265),
-                BackColor = Color.LightGray
+                BackColor = AppTheme.BorderColor
             };
 
             chkShowMarkers = new CheckBox
@@ -203,10 +223,11 @@ namespace SPES_Raschet
             {
                 Text = title,
                 Dock = DockStyle.Top,
-                Height = 30,
+                Height = 34,
                 TextAlign = ContentAlignment.MiddleLeft,
                 Font = new Font("Segoe UI", 10, FontStyle.Bold),
                 Padding = new Padding(10, 0, 0, 0),
+                ForeColor = AppTheme.TextColor,
                 BackColor = Color.White
             };
             p.Controls.Add(grid);
@@ -309,11 +330,15 @@ namespace SPES_Raschet
             {
                 series.MarkerStyle = style;
                 series.MarkerSize = size;
+                series.MarkerBorderColor = Color.White;
+                series.MarkerBorderWidth = show ? 1 : 0;
             }
             foreach (var series in chartSunPosition.Series)
             {
                 series.MarkerStyle = style;
                 series.MarkerSize = size;
+                series.MarkerBorderColor = Color.White;
+                series.MarkerBorderWidth = show ? 1 : 0;
             }
         }
 
@@ -339,10 +364,13 @@ namespace SPES_Raschet
                 {
                     string dirName = _directionsOrder[i];
                     bool isActive = directionsState[dirName];
-                    Brush fillBrush = isActive ? Brushes.Orange : Brushes.LightGray;
+                    Brush fillBrush = isActive
+                        ? new SolidBrush(Color.FromArgb(230, 159, 0))
+                        : new SolidBrush(Color.FromArgb(225, 230, 234));
 
                     e.Graphics.FillPie(fillBrush, cx - r, cy - r, 2 * r, 2 * r, startAngle, sweepAngle);
                     e.Graphics.DrawPie(borderPen, cx - r, cy - r, 2 * r, 2 * r, startAngle, sweepAngle);
+                    if (fillBrush is IDisposable disposableBrush) disposableBrush.Dispose();
 
                     double midAngleRad = (startAngle + sweepAngle / 2) * Math.PI / 180.0;
                     int textR = r - 25;
@@ -357,10 +385,13 @@ namespace SPES_Raschet
 
             bool allOn = directionsState.Values.All(x => x);
             bool allOff = directionsState.Values.All(x => !x);
-            Brush centerBrush = allOn ? Brushes.LightGreen : (allOff ? Brushes.LightPink : Brushes.White);
+            Brush centerBrush = allOn
+                ? new SolidBrush(AppTheme.SuccessBackColor)
+                : (allOff ? new SolidBrush(AppTheme.ErrorBackColor) : new SolidBrush(Color.White));
 
             e.Graphics.FillEllipse(centerBrush, cx - CENTER_RADIUS, cy - CENTER_RADIUS, 2 * CENTER_RADIUS, 2 * CENTER_RADIUS);
-            e.Graphics.DrawEllipse(Pens.Gray, cx - CENTER_RADIUS, cy - CENTER_RADIUS, 2 * CENTER_RADIUS, 2 * CENTER_RADIUS);
+            e.Graphics.DrawEllipse(new Pen(AppTheme.BorderColor), cx - CENTER_RADIUS, cy - CENTER_RADIUS, 2 * CENTER_RADIUS, 2 * CENTER_RADIUS);
+            if (centerBrush is IDisposable disposableCenterBrush) disposableCenterBrush.Dispose();
         }
 
         private void CompassBox_MouseClick(object? sender, MouseEventArgs e)
@@ -524,19 +555,26 @@ namespace SPES_Raschet
                 BackgroundColor = Color.White,
                 ReadOnly = true,
                 AllowUserToAddRows = false,
+                AllowUserToResizeRows = false,
+                AllowUserToOrderColumns = false,
                 RowHeadersVisible = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                 BorderStyle = BorderStyle.None,
                 ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.EnableResizing
             };
-            grid.ColumnHeadersHeight = 60;
+            grid.ColumnHeadersHeight = 46;
             grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9, FontStyle.Bold);
             grid.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            grid.ColumnHeadersDefaultCellStyle.BackColor = Color.LightGray;
+            grid.ColumnHeadersDefaultCellStyle.BackColor = AppTheme.PrimaryColor;
+            grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
             grid.EnableHeadersVisualStyles = false;
             grid.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
             grid.DefaultCellStyle.Font = new Font("Segoe UI", 9);
-            grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(245, 250, 255);
+            grid.DefaultCellStyle.SelectionBackColor = AppTheme.NavActiveBackColor;
+            grid.DefaultCellStyle.SelectionForeColor = AppTheme.TextColor;
+            grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(249, 250, 251);
+            grid.GridColor = AppTheme.BorderColor;
+            grid.RowTemplate.Height = 30;
             return grid;
         }
 
@@ -546,14 +584,27 @@ namespace SPES_Raschet
             ChartArea area = new ChartArea("MainArea");
             area.AxisX.Title = "Час суток";
             area.AxisX.Interval = 1;
-            area.AxisX.MajorGrid.LineColor = Color.FromArgb(240, 240, 240);
-            area.AxisY.MajorGrid.LineColor = Color.FromArgb(240, 240, 240);
+            area.BackColor = Color.White;
+            area.AxisX.MajorGrid.LineColor = Color.FromArgb(236, 240, 244);
+            area.AxisY.MajorGrid.LineColor = Color.FromArgb(236, 240, 244);
+            area.AxisX.LineColor = AppTheme.BorderColor;
+            area.AxisY.LineColor = AppTheme.BorderColor;
+            area.AxisX.LabelStyle.ForeColor = AppTheme.TextColor;
+            area.AxisY.LabelStyle.ForeColor = AppTheme.TextColor;
+            area.AxisX.TitleForeColor = AppTheme.TextColor;
+            area.AxisY.TitleForeColor = AppTheme.TextColor;
+            area.AxisX.IsStartedFromZero = false;
             chart.ChartAreas.Add(area);
             Legend legend = new Legend("MainLegend");
             legend.Docking = Docking.Bottom;
+            legend.Alignment = StringAlignment.Center;
+            legend.Font = new Font("Segoe UI", 8.5f, FontStyle.Regular);
+            legend.BackColor = Color.White;
+            legend.ForeColor = AppTheme.TextColor;
             chart.Legends.Add(legend);
             Title title = new Title(titleText);
             title.Font = new Font("Segoe UI", 12, FontStyle.Bold);
+            title.ForeColor = AppTheme.TextColor;
             chart.Titles.Add(title);
             return chart;
         }
@@ -569,6 +620,8 @@ namespace SPES_Raschet
                 Series series = new Series(seriesName);
                 series.ChartType = SeriesChartType.Spline;
                 series.BorderWidth = 2;
+                series.Color = IrradianceSeriesPalette[(i - 1) % IrradianceSeriesPalette.Length];
+                series.Legend = "MainLegend";
                 series.MarkerStyle = MarkerStyle.None;
                 foreach (DataRow row in dt.Rows)
                 {
@@ -584,8 +637,8 @@ namespace SPES_Raschet
         {
             chartSunPosition.Series.Clear();
             if (dt.Rows.Count == 0) return;
-            Series serAlt = new Series("Высота (h)") { ChartType = SeriesChartType.Spline, BorderWidth = 3, Color = Color.OrangeRed, YAxisType = AxisType.Primary };
-            Series serAz = new Series("Азимут (Ac)") { ChartType = SeriesChartType.Line, BorderWidth = 2, Color = Color.SteelBlue, YAxisType = AxisType.Secondary };
+            Series serAlt = new Series("Высота (h)") { ChartType = SeriesChartType.Spline, BorderWidth = 3, Color = Color.FromArgb(230, 81, 0), YAxisType = AxisType.Primary };
+            Series serAz = new Series("Азимут (Ac)") { ChartType = SeriesChartType.Line, BorderWidth = 3, Color = Color.FromArgb(33, 111, 181), YAxisType = AxisType.Secondary };
             foreach (DataRow row in dt.Rows)
             {
                 int hour = Convert.ToInt32(row["Час"]);
@@ -595,7 +648,11 @@ namespace SPES_Raschet
             chartSunPosition.ChartAreas[0].AxisY.Title = "Высота (°)";
             chartSunPosition.ChartAreas[0].AxisY2.Enabled = AxisEnabled.True;
             chartSunPosition.ChartAreas[0].AxisY2.Title = "Азимут (°)";
-            StripLine horizon = new StripLine { IntervalOffset = 0, StripWidth = 0.1, BackColor = Color.Black };
+            chartSunPosition.ChartAreas[0].AxisY2.LabelStyle.ForeColor = AppTheme.TextColor;
+            chartSunPosition.ChartAreas[0].AxisY2.TitleForeColor = AppTheme.TextColor;
+            chartSunPosition.ChartAreas[0].AxisY2.LineColor = AppTheme.BorderColor;
+            chartSunPosition.ChartAreas[0].AxisY2.MajorGrid.Enabled = false;
+            StripLine horizon = new StripLine { IntervalOffset = 0, StripWidth = 0.08, BackColor = Color.FromArgb(110, 110, 110) };
             chartSunPosition.ChartAreas[0].AxisY.StripLines.Add(horizon);
             chartSunPosition.Series.Add(serAlt);
             chartSunPosition.Series.Add(serAz);
