@@ -4,11 +4,20 @@ using System.Windows.Forms.DataVisualization.Charting;
 
 namespace SPES_Raschet
 {
+    public enum ThemeVariant
+    {
+        BlueAtlantika440,
+        Green,
+        Red,
+        Orange
+    }
+
     public static class AppTheme
     {
         // Палитра
-        public static Color PrimaryColor = Color.FromArgb(35, 140, 93);
-        public static Color DarkPrimary = Color.FromArgb(24, 107, 70);
+        public static ThemeVariant CurrentTheme { get; private set; } = ThemeVariant.BlueAtlantika440;
+        public static Color PrimaryColor = Color.FromArgb(0, 68, 160);
+        public static Color DarkPrimary = Color.FromArgb(0, 50, 122);
         public static Color AccentColor = Color.FromArgb(245, 158, 11);
         public static Color BackgroundColor = Color.FromArgb(246, 248, 250);
         public static Color PanelColor = Color.White;
@@ -21,6 +30,43 @@ namespace SPES_Raschet
         public static Color ErrorBackColor = Color.FromArgb(255, 235, 235);
         public static Font MainFont = new Font("Segoe UI", 10F, FontStyle.Regular);
         public static Font HeaderFont = new Font("Segoe UI", 12F, FontStyle.Bold);
+
+        public static void SetTheme(ThemeVariant theme)
+        {
+            CurrentTheme = theme;
+            switch (theme)
+            {
+                case ThemeVariant.Red:
+                    PrimaryColor = Color.FromArgb(184, 44, 44);
+                    DarkPrimary = Color.FromArgb(138, 30, 30);
+                    AccentColor = Color.FromArgb(239, 68, 68);
+                    NavHoverBackColor = Color.FromArgb(253, 242, 242);
+                    NavActiveBackColor = Color.FromArgb(254, 226, 226);
+                    break;
+                case ThemeVariant.Green:
+                    PrimaryColor = Color.FromArgb(35, 140, 93);
+                    DarkPrimary = Color.FromArgb(24, 107, 70);
+                    AccentColor = Color.FromArgb(16, 185, 129);
+                    NavHoverBackColor = Color.FromArgb(240, 247, 244);
+                    NavActiveBackColor = Color.FromArgb(230, 245, 238);
+                    break;
+                case ThemeVariant.Orange:
+                    PrimaryColor = Color.FromArgb(217, 119, 6);
+                    DarkPrimary = Color.FromArgb(180, 83, 9);
+                    AccentColor = Color.FromArgb(249, 115, 22);
+                    NavHoverBackColor = Color.FromArgb(255, 247, 237);
+                    NavActiveBackColor = Color.FromArgb(255, 237, 213);
+                    break;
+                default:
+                    // 440 Atlantika (base blue)
+                    PrimaryColor = Color.FromArgb(0, 68, 160);
+                    DarkPrimary = Color.FromArgb(0, 50, 122);
+                    AccentColor = Color.FromArgb(56, 132, 255);
+                    NavHoverBackColor = Color.FromArgb(239, 246, 255);
+                    NavActiveBackColor = Color.FromArgb(219, 234, 254);
+                    break;
+            }
+        }
 
         // Метод для стилизации Таблиц
         public static void StyleDataGridView(DataGridView grid)

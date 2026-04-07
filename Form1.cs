@@ -6,6 +6,7 @@ using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 using System.Diagnostics;
+using SPES_Raschet.Session;
 
 namespace SPES_Raschet
 {
@@ -33,6 +34,8 @@ namespace SPES_Raschet
         private Button btnNavData = null!;
         private Button btnNavHelp = null!;
         private Panel navIndicator = null!; // Полоска активной вкладки
+        private Panel restorePanel = null!;
+        private SessionState? pendingSessionRestore;
 
         public Form1()
         {
@@ -55,8 +58,11 @@ namespace SPES_Raschet
 
             // Подписки таблицы
             this.dataGridViewData.CellFormatting += DataGridViewData_CellFormatting;
+            this.FormClosing += (_, _) => SaveCurrentSessionState();
 
             InitializeProgramAndLoadData();
+            pendingSessionRestore = SessionStateService.TryLoad();
+            ShowRestorePromptIfNeeded();
         }
 
         private void ApplyModernDesign()
@@ -170,6 +176,53 @@ namespace SPES_Raschet
 
             SwitchTab(0, btnNavMap);
             SetStatusNeutral("Данные геопозиции загружены.");
+
+            restorePanel = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 42,
+                Visible = false,
+                BackColor = Color.FromArgb(255, 248, 221),
+                Padding = new Padding(10, 8, 10, 6)
+            };
+
+            var restoreLabel = new Label
+            {
+                AutoSize = true,
+                Text = "Найдена предыдущая сессия. Восстановить?",
+                ForeColor = AppTheme.TextColor,
+                Dock = DockStyle.Left
+            };
+            var btnRestore = new Button
+            {
+                Text = "Восстановить",
+                Width = 110,
+                Height = 26,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = AppTheme.PrimaryColor,
+                ForeColor = Color.White,
+                Dock = DockStyle.Right
+            };
+            btnRestore.FlatAppearance.BorderSize = 0;
+            btnRestore.Click += (_, _) => RestorePreviousSession();
+
+            var btnDismiss = new Button
+            {
+                Text = "Игнорировать",
+                Width = 110,
+                Height = 26,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.White,
+                ForeColor = AppTheme.TextColor,
+                Dock = DockStyle.Right
+            };
+            btnDismiss.Click += (_, _) => restorePanel.Visible = false;
+
+            restorePanel.Controls.Add(btnRestore);
+            restorePanel.Controls.Add(btnDismiss);
+            restorePanel.Controls.Add(restoreLabel);
+            tabPageCalculator.Controls.Add(restorePanel);
+            restorePanel.BringToFront();
         }
 
         private Button CreateNavButton(string text, int tabIndex)
@@ -204,6 +257,7 @@ namespace SPES_Raschet
             // Активация текущей
             AppTheme.SetActiveNavButton(senderBtn, navIndicator);
             tabControl1.SelectedIndex = index;
+            SaveCurrentSessionState();
         }
 
         private void InitializeHelpTab()
@@ -366,6 +420,7 @@ namespace SPES_Raschet
                     bs.DataSource = currentDataTable;
                     dataGridViewData.DataSource = bs;
                     filterTextBox_TextChanged(this, EventArgs.Empty);
+                    SaveCurrentSessionState();
                 }
             }
             catch { }
@@ -379,6 +434,7 @@ namespace SPES_Raschet
                 label1.Text = "Фильтр (Широта):";
                 if (string.IsNullOrWhiteSpace(filterText)) bs.Filter = null;
                 else try { bs.Filter = $"Convert([Широта, °], 'System.String') LIKE '%{filterText}%'"; } catch { }
+                SaveCurrentSessionState();
             }
         }
 
@@ -499,6 +555,7 @@ namespace SPES_Raschet
             {
                 btnCalculate.Visible = true;
                 SetStatusSuccess($"Выбран: {currentSettlement.CityOrSettlement} ({currentSettlement.Region})");
+                SaveCurrentSessionState();
             }
         }
 
@@ -521,6 +578,64 @@ namespace SPES_Raschet
             statusStrip1.BackColor = AppTheme.ErrorBackColor;
             statusLabel.Text = message;
             statusLabel.ForeColor = Color.FromArgb(139, 0, 0);
+        }
+
+        private void ShowRestorePromptIfNeeded()
+        {
+            if (pendingSessionRestore == null) return;
+            if (string.IsNullOrWhiteSpace(pendingSessionRestore.SettlementName)) return;
+            restorePanel.Visible = true;
+        }
+
+        private void RestorePreviousSession()
+        {
+            if (pendingSessionRestore == null)
+            {
+                restorePanel.Visible = false;
+                return;
+            }
+
+            var state = pendingSessionRestore;
+            pendingSessionRestore = null;
+            restorePanel.Visible = false;
+
+            var settlement = GeoDataHandler.SettlementList.FirstOrDefault(x =>
+                x.CityOrSettlement == state.SettlementName &&
+                Math.Abs(x.Latitude - state.Latitude) < 0.0001 &&
+                Math.Abs(x.Longitude - state.Longitude) < 0.0001);
+
+            if (settlement != null)
+            {
+                currentSettlement = settlement;
+                selectedRegion = state.Region;
+                UpdateStatusWithSelection();
+            }
+
+            if (state.NavTabIndex >= 0 && state.NavTabIndex < tabControl1.TabPages.Count)
+                tabControl1.SelectedIndex = state.NavTabIndex;
+
+            if (state.SelectedTableIndex >= 0 && state.SelectedTableIndex < comboSelectTable.Items.Count)
+                comboSelectTable.SelectedIndex = state.SelectedTableIndex;
+
+            filterTextBox.Text = state.FilterText ?? string.Empty;
+        }
+
+        private void SaveCurrentSessionState()
+        {
+            if (currentSettlement == null) return;
+
+            var state = new SessionState
+            {
+                SettlementName = currentSettlement.CityOrSettlement,
+                Region = currentSettlement.Region,
+                Latitude = currentSettlement.Latitude,
+                Longitude = currentSettlement.Longitude,
+                TimeZoneOffset = currentSettlement.TimeZoneOffset,
+                NavTabIndex = tabControl1.SelectedIndex,
+                SelectedTableIndex = comboSelectTable.SelectedIndex,
+                FilterText = filterTextBox.Text
+            };
+            SessionStateService.Save(state);
         }
 
         private void CalcButton_Click(object? sender, EventArgs e)
