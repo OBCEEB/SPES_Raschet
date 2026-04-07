@@ -6,6 +6,7 @@ using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
+using SPES_Raschet.Reporting;
 
 namespace SPES_Raschet
 {
@@ -21,6 +22,7 @@ namespace SPES_Raschet
         private Chart chartSunPosition = null!;
         private Label titleLabel = null!;
         private Label subtitleLabel = null!;
+        private Button btnExportPdf = null!;
 
         // --- Элементы управления Графиками ---
         private PictureBox compassBox = null!;
@@ -54,6 +56,8 @@ namespace SPES_Raschet
             Color.FromArgb(127, 140, 141),
             Color.FromArgb(44, 62, 80)
         };
+        private DataTable _irradianceResult = new DataTable();
+        private DataTable _sunPositionResult = new DataTable();
 
         public CalculationResultsForm(SettlementData data)
         {
@@ -104,6 +108,24 @@ namespace SPES_Raschet
 
             headerPanel.Controls.Add(subtitleLabel);
             headerPanel.Controls.Add(titleLabel);
+
+            btnExportPdf = new Button
+            {
+                Text = "Экспорт PDF",
+                Width = 140,
+                Height = 34,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = AppTheme.PrimaryColor,
+                ForeColor = Color.White,
+                Location = new Point(headerPanel.Width - 170, 22)
+            };
+            btnExportPdf.FlatAppearance.BorderSize = 0;
+            btnExportPdf.FlatAppearance.MouseOverBackColor = AppTheme.DarkPrimary;
+            btnExportPdf.FlatAppearance.MouseDownBackColor = AppTheme.DarkPrimary;
+            btnExportPdf.Click += BtnExportPdf_Click;
+            headerPanel.Resize += (_, _) => btnExportPdf.Location = new Point(headerPanel.Width - 170, 22);
+            headerPanel.Controls.Add(btnExportPdf);
             this.Controls.Add(headerPanel);
 
             // 2. Вкладки
@@ -459,9 +481,11 @@ namespace SPES_Raschet
                                  $"Интерполированный суточный приход радиации: {dailyTotal:F2} МДж/м²";
 
             DataTable dtIrradiance = CalculateHourlyIrradiance(lat);
+            _irradianceResult = dtIrradiance.Copy();
             gridIrradiance.DataSource = dtIrradiance;
 
             DataTable dtSunPosition = CalculateSunPosition(lat);
+            _sunPositionResult = dtSunPosition.Copy();
             gridSunPosition.DataSource = dtSunPosition;
 
             FillIrradianceChart(dtIrradiance);
@@ -656,6 +680,143 @@ namespace SPES_Raschet
             chartSunPosition.ChartAreas[0].AxisY.StripLines.Add(horizon);
             chartSunPosition.Series.Add(serAlt);
             chartSunPosition.Series.Add(serAz);
+        }
+
+        private void BtnExportPdf_Click(object? sender, EventArgs e)
+        {
+            if (_irradianceResult.Rows.Count == 0 && _sunPositionResult.Rows.Count == 0)
+            {
+                MessageBox.Show("Нет данных для экспорта. Сначала выполните расчет.", "Экспорт PDF", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var exporter = new PdfReportExporter();
+
+            using var optionsForm = new ReportExportOptionsForm(request =>
+            {
+                var irrChart = ExportChartToPng(chartIrradiance, request.ShowExactPointLabelsOnCharts);
+                var sunChart = ExportChartToPng(chartSunPosition, request.ShowExactPointLabelsOnCharts);
+                var previewProvider = new ClimatologyReportProvider(
+                    _settlement,
+                    _irradianceResult,
+                    _sunPositionResult,
+                    irrChart,
+                    sunChart);
+                var previewReport = previewProvider.BuildReport(request);
+                return exporter.GenerateBytes(previewReport, request.Orientation);
+            });
+            if (optionsForm.ShowDialog(this) != DialogResult.OK)
+                return;
+
+            using var saveDialog = new SaveFileDialog
+            {
+                Filter = "PDF files (*.pdf)|*.pdf",
+                FileName = $"SPES_Climatology_{_settlement.CityOrSettlement}_{DateTime.Now:yyyyMMdd_HHmm}.pdf",
+                Title = "Сохранить отчет PDF"
+            };
+
+            if (saveDialog.ShowDialog(this) != DialogResult.OK)
+                return;
+
+            try
+            {
+                var reportProvider = new ClimatologyReportProvider(
+                    _settlement,
+                    _irradianceResult,
+                    _sunPositionResult,
+                    ExportChartToPng(chartIrradiance, optionsForm.Request.ShowExactPointLabelsOnCharts),
+                    ExportChartToPng(chartSunPosition, optionsForm.Request.ShowExactPointLabelsOnCharts));
+                var report = reportProvider.BuildReport(optionsForm.Request);
+                exporter.Export(report, optionsForm.Request.Orientation, saveDialog.FileName);
+
+                MessageBox.Show($"Отчет успешно сохранен:\n{saveDialog.FileName}", "Экспорт PDF", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка экспорта PDF:\n{ex.Message}", "Экспорт PDF", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private static byte[] ExportChartToPng(Chart chart, bool showExactLabels)
+        {
+            using var clonedChart = new Chart
+            {
+                Width = chart.Width > 0 ? chart.Width : 1200,
+                Height = chart.Height > 0 ? chart.Height : 420,
+                BackColor = chart.BackColor
+            };
+
+            foreach (ChartArea area in chart.ChartAreas)
+            {
+                var newArea = new ChartArea(area.Name)
+                {
+                    BackColor = area.BackColor
+                };
+                newArea.AxisX.Title = area.AxisX.Title;
+                newArea.AxisY.Title = area.AxisY.Title;
+                newArea.AxisY2.Title = area.AxisY2.Title;
+                newArea.AxisX.Interval = area.AxisX.Interval;
+                newArea.AxisX.MajorGrid.LineColor = area.AxisX.MajorGrid.LineColor;
+                newArea.AxisY.MajorGrid.LineColor = area.AxisY.MajorGrid.LineColor;
+                newArea.AxisX.LineColor = area.AxisX.LineColor;
+                newArea.AxisY.LineColor = area.AxisY.LineColor;
+                newArea.AxisY2.LineColor = area.AxisY2.LineColor;
+                newArea.AxisY2.Enabled = area.AxisY2.Enabled;
+                clonedChart.ChartAreas.Add(newArea);
+            }
+
+            foreach (var legend in chart.Legends.Cast<Legend>())
+            {
+                var newLegend = new Legend(legend.Name)
+                {
+                    Docking = legend.Docking,
+                    Alignment = legend.Alignment,
+                    Font = legend.Font,
+                    BackColor = legend.BackColor,
+                    ForeColor = legend.ForeColor
+                };
+                clonedChart.Legends.Add(newLegend);
+            }
+
+            foreach (Title title in chart.Titles)
+            {
+                clonedChart.Titles.Add(new Title(title.Text)
+                {
+                    Font = title.Font,
+                    ForeColor = title.ForeColor
+                });
+            }
+
+            foreach (Series series in chart.Series)
+            {
+                var newSeries = new Series(series.Name)
+                {
+                    ChartType = series.ChartType,
+                    BorderWidth = series.BorderWidth,
+                    Color = series.Color,
+                    ChartArea = series.ChartArea,
+                    Legend = series.Legend,
+                    YAxisType = series.YAxisType,
+                    IsValueShownAsLabel = showExactLabels,
+                    LabelFormat = "0.##",
+                    Font = new Font("Segoe UI", 8f, FontStyle.Regular),
+                    LabelForeColor = AppTheme.TextColor,
+                    MarkerStyle = series.MarkerStyle,
+                    MarkerSize = series.MarkerSize
+                };
+
+                foreach (var point in series.Points)
+                {
+                    var p = new DataPoint(point.XValue, point.YValues[0]);
+                    newSeries.Points.Add(p);
+                }
+
+                clonedChart.Series.Add(newSeries);
+            }
+
+            using var stream = new System.IO.MemoryStream();
+            clonedChart.SaveImage(stream, ChartImageFormat.Png);
+            return stream.ToArray();
         }
     }
 }
