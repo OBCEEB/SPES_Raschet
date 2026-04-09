@@ -58,3 +58,7 @@ dotnet run --project SPES_Raschet.csproj
 Используется SemVer: `MAJOR.MINOR.PATCH` (см. `docs/VERSIONING.md`).
 
 Текущая базовая версия: `0.1.0`.
+
+## UI-сообщения
+
+Для единообразного стиля текстов в интерфейсе используйте `docs/MESSAGE_STYLE_GUIDE.md`.

@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Text;
 using System.Windows.Forms;
-using SPES_Raschet.Diagnostics;
+using SPES_Raschet.Modules;
+using SPES_Raschet.Services;
 using SPES_Raschet.Session;
 
 namespace SPES_Raschet
@@ -12,12 +15,13 @@ namespace SPES_Raschet
         private Panel modulesCard = null!;
         private Panel diagnosticsCard = null!;
         private Panel helpCard = null!;
-        private Button btnClimate = null!;
-        private Button btnSolarCollector = null!;
         private Button btnDiagnostics = null!;
         private RichTextBox helpText = null!;
         private ComboBox themeSelector = null!;
         private Label lblTheme = null!;
+        private FlowLayoutPanel modulesFlow = null!;
+        private IReadOnlyList<IModuleDescriptor> modules = null!;
+        private readonly List<Button> moduleButtons = new List<Button>();
 
         public ShellForm()
         {
@@ -26,6 +30,7 @@ namespace SPES_Raschet
             ClientSize = new Size(1080, 700);
             BackColor = AppTheme.BackgroundColor;
             Font = AppTheme.MainFont;
+            modules = ModuleRegistry.GetModules();
 
             var root = new TableLayoutPanel
             {
@@ -41,7 +46,7 @@ namespace SPES_Raschet
             modulesCard = CreateCard("Модули СПЭС");
             root.Controls.Add(modulesCard, 0, 0);
 
-            var modulesFlow = new FlowLayoutPanel
+            modulesFlow = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
                 FlowDirection = FlowDirection.TopDown,
@@ -51,18 +56,7 @@ namespace SPES_Raschet
             };
             modulesCard.Controls.Add(modulesFlow);
             modulesFlow.BringToFront();
-
-            btnClimate = CreateActionButton("СПЭС-Климатология");
-            btnClimate.Click += (_, _) =>
-            {
-                using var module = new Form1();
-                module.ShowDialog(this);
-            };
-            modulesFlow.Controls.Add(btnClimate);
-
-            btnSolarCollector = CreateActionButton("СПЭС-Расчет коллектора (скоро)");
-            btnSolarCollector.Enabled = false;
-            modulesFlow.Controls.Add(btnSolarCollector);
+            BuildModuleButtons();
 
             var rightCol = new TableLayoutPanel
             {
@@ -131,20 +125,67 @@ namespace SPES_Raschet
                 BackColor = AppTheme.PanelColor,
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Regular),
                 ForeColor = AppTheme.TextColor,
-                Text =
-                    "СПЭС — набор прикладных модулей для расчета и анализа данных.\n\n" +
-                    "1) СПЭС-Климатология\n" +
-                    "   Выбор населенного пункта по карте и получение климатических данных.\n\n" +
-                    "2) СПЭС-Расчет коллектора (планируется)\n" +
-                    "   Расчет параметров солнечного коллектора на основе климатических данных.\n\n" +
-                    "Рекомендации:\n" +
-                    "• Перед началом работы выполняйте диагностику файлов данных.\n" +
-                    "• Для формирования отчетов используйте экспорт PDF внутри модуля.\n" +
-                    "• При наличии сохраненной сессии модуль предложит восстановление."
+                Text = BuildHelpText()
             };
             helpCard.Controls.Add(helpText);
 
             ApplyThemeToShell();
+        }
+
+        private void BuildModuleButtons()
+        {
+            modulesFlow.Controls.Clear();
+            moduleButtons.Clear();
+
+            foreach (var module in modules)
+            {
+                var button = CreateActionButton(module.DisplayName);
+                button.Enabled = module.IsAvailable;
+                button.Click += (_, _) => LaunchModule(module);
+                modulesFlow.Controls.Add(button);
+                moduleButtons.Add(button);
+            }
+        }
+
+        private void LaunchModule(IModuleDescriptor module)
+        {
+            if (module is not IModuleLauncher launcher)
+            {
+                UiMessageService.Warning(
+                    "Модули",
+                    $"Раздел \"{module.DisplayName}\" сейчас временно недоступен.",
+                    this);
+                return;
+            }
+
+            launcher.Launch(this);
+        }
+
+        private string BuildHelpText()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("СПЭС помогает получать и анализировать данные для выбранного населенного пункта.");
+            sb.AppendLine();
+            sb.AppendLine("Как начать работу:");
+            sb.AppendLine("1) При необходимости нажмите \"Проверить файлы данных\".");
+            sb.AppendLine("2) Выберите нужный модуль слева.");
+            sb.AppendLine("3) Выполните расчет и сформируйте PDF-отчет внутри модуля.");
+            sb.AppendLine();
+            sb.AppendLine("Доступные разделы:");
+            for (int i = 0; i < modules.Count; i++)
+            {
+                var module = modules[i];
+                sb.AppendLine($"{i + 1}) {module.DisplayName}{(module.IsAvailable ? string.Empty : " (планируется)")}");
+                sb.AppendLine($"   {module.Description}");
+                sb.AppendLine();
+            }
+
+            sb.AppendLine("Полезно знать:");
+            sb.AppendLine("• Тема интерфейса меняется в блоке \"Цветовая схема\".");
+            sb.AppendLine("• Если ранее работа уже велась, модуль может предложить восстановить сессию.");
+            sb.AppendLine("• При проблемах сначала проверьте наличие файлов данных.");
+
+            return sb.ToString().TrimEnd();
         }
 
         private static Panel CreateCard(string title)
@@ -188,23 +229,41 @@ namespace SPES_Raschet
 
         private void ShowDiagnostics()
         {
-            var report = StartupDiagnosticsService.Run();
-            if (!report.HasIssues)
+            var issues = modules
+                .Where(module => module.IsAvailable)
+                .SelectMany(module =>
+                {
+                    if (module is not IModuleDiagnostics diagnostics)
+                    {
+                        return new[]
+                        {
+                            $"{module.DisplayName}: проверка файлов сейчас недоступна"
+                        };
+                    }
+
+                    return diagnostics.ValidateEnvironment()
+                        .Select(issue => $"{module.DisplayName}: {issue}");
+                })
+                .ToList();
+
+            if (issues.Count == 0)
             {
-                MessageBox.Show(
-                    $"Диагностика завершена успешно.\n\nНайдено файлов: {report.FoundFiles.Count}",
-                    "СПЭС • Диагностика",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                UiMessageService.Info(
+                    "Диагностика",
+                    "Все в порядке: обязательные файлы данных найдены.\n\nМожно переходить к расчетам.",
+                    this);
                 return;
             }
 
-            MessageBox.Show(
-                "Обнаружены проблемы с файлами данных:\n\n" +
-                string.Join("\n", report.MissingFiles.Select(x => "• " + x)),
-                "СПЭС • Диагностика",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Warning);
+            UiMessageService.Warning(
+                "Диагностика",
+                "Не удалось найти часть файлов данных.\n\n" +
+                "Что сделать:\n" +
+                "1) Проверьте, что файлы данных находятся рядом с приложением.\n" +
+                "2) Если файлы были перемещены, верните их в папку программы.\n\n" +
+                "Список отсутствующих файлов:\n" +
+                string.Join("\n", issues.Select(x => "• " + x)),
+                this);
         }
 
         private void ApplySelectedTheme()
@@ -226,8 +285,10 @@ namespace SPES_Raschet
             helpText.ForeColor = AppTheme.TextColor;
             lblTheme.ForeColor = AppTheme.TextColor;
 
-            StyleButton(btnClimate);
-            StyleButton(btnSolarCollector);
+            foreach (var moduleButton in moduleButtons)
+            {
+                StyleButton(moduleButton);
+            }
             StyleButton(btnDiagnostics);
         }
 

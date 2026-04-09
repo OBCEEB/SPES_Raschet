@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text;
-using System.Windows.Forms; // Добавлено для MessageBox
+using SPES_Raschet.Services;
 
 namespace SPES_Raschet
 {
@@ -76,11 +76,10 @@ namespace SPES_Raschet
                 string? settlementsPath = ResolveDataFilePath(SettlementsFileName);
                 if (settlementsPath == null)
                 {
-                    MessageBox.Show(
-                        $"Файл {SettlementsFileName} не найден.\nПроверьте, что файл находится рядом с exe или в папке проекта.",
-                        "Ошибка",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error);
+                    UiMessageService.Error(
+                        "Ошибка данных",
+                        $"Не найден файл данных: {SettlementsFileName}.\n\nПроверьте, что файл находится в папке программы.",
+                        null);
                     return;
                 }
 
@@ -114,7 +113,10 @@ namespace SPES_Raschet
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка загрузки CSV: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                UiMessageService.Error(
+                    "Ошибка данных",
+                    $"Не удалось прочитать файл населенных пунктов.\n\n{ex.Message}",
+                    null);
             }
         }
 
@@ -125,7 +127,6 @@ namespace SPES_Raschet
                 string? regionsPath = ResolveDataFilePath(fileName);
                 if (regionsPath == null)
                 {
-                    // MessageBox.Show($"Файл {fileName} не найден!", "Внимание", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
@@ -147,7 +148,10 @@ namespace SPES_Raschet
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка загрузки JSON: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                UiMessageService.Error(
+                    "Ошибка данных",
+                    $"Не удалось прочитать файл границ регионов.\n\n{ex.Message}",
+                    null);
             }
         }
 

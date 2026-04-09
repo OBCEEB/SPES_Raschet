@@ -449,7 +449,10 @@ namespace SPES_Raschet
             var loadResult = DataImporter.LoadAllData();
             if (!loadResult.Success)
             {
-                MessageBox.Show(loadResult.Message, "Ошибка загрузки данных", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                UiMessageService.Error(
+                    "Ошибка загрузки данных",
+                    $"Не удалось загрузить расчетные таблицы.\n\n{loadResult.Message}\n\nПроверьте файлы данных и повторите запуск.",
+                    this);
                 SetStatusError("Ошибка загрузки расчетных данных.");
                 return;
             }
@@ -631,7 +634,10 @@ namespace SPES_Raschet
                     }
                 }
             }
-            else MessageBox.Show($"Нет данных для: {regionName}", "Инфо", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            else UiMessageService.Info(
+                "Данные не найдены",
+                $"Для региона \"{regionName}\" сейчас нет доступных населенных пунктов.",
+                this);
         }
 
         private void UpdateStatusWithSelection()

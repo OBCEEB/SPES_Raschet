@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using SPES_Raschet.Services;
 
 namespace SPES_Raschet
 {
@@ -91,7 +92,10 @@ namespace SPES_Raschet
             if (e.CloseReason == CloseReason.UserClosing && SelectedSettlement == null)
             {
                 e.Cancel = true;
-                MessageBox.Show("Пожалуйста, выберите населенный пункт для продолжения.", "Выбор обязателен", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                UiMessageService.Warning(
+                    "Нужен выбор",
+                    "Чтобы продолжить, выберите населенный пункт из списка.",
+                    this);
             }
 
             base.OnFormClosing(e);

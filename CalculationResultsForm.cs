@@ -613,7 +613,10 @@ namespace SPES_Raschet
         {
             if (_irradianceResult.Rows.Count == 0 && _sunPositionResult.Rows.Count == 0)
             {
-                MessageBox.Show("Нет данных для экспорта. Сначала выполните расчет.", "Экспорт PDF", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                UiMessageService.Info(
+                    "Экспорт PDF",
+                    "Нет данных для формирования отчета.\n\nСначала выполните расчет, затем повторите экспорт.",
+                    this);
                 return;
             }
 
@@ -656,11 +659,17 @@ namespace SPES_Raschet
                 var report = reportProvider.BuildReport(optionsForm.Request);
                 exporter.Export(report, optionsForm.Request.Orientation, saveDialog.FileName);
 
-                MessageBox.Show($"Отчет успешно сохранен:\n{saveDialog.FileName}", "Экспорт PDF", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                UiMessageService.Info(
+                    "Экспорт PDF",
+                    $"Отчет успешно сохранен.\n\nПуть к файлу:\n{saveDialog.FileName}",
+                    this);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка экспорта PDF:\n{ex.Message}", "Экспорт PDF", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                UiMessageService.Error(
+                    "Экспорт PDF",
+                    $"Не удалось сохранить PDF-отчет.\n\n{ex.Message}\n\nПопробуйте выбрать другую папку или имя файла.",
+                    this);
             }
         }
 
