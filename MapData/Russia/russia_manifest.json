@@ -1,0 +1,12 @@
+﻿{
+    "tiles_file_size_bytes":  4440064,
+    "generated_at_utc":  "2026-04-09T22:19:00.3221973Z",
+    "expected_files":  [
+                           "russia_manifest.json",
+                           "russia_style.json",
+                           "russia_map.mbtiles"
+                       ],
+    "attribution":  "OpenStreetMap contributors (ODbL)",
+    "package":  "SPES_RUSSIA_OVERVIEW_OFFLINE_MAP",
+    "notes":  "Optional. Run: py tools/download_russia_mbtiles.py"
+}

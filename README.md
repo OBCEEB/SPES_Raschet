@@ -41,6 +41,8 @@ dotnet run --project SPES_Raschet.csproj
 
 Файлы автоматически копируются в output при сборке (`CopyToOutputDirectory=PreserveNewest`).
 
+Для режима новых данных ЦФО офлайн-пакет карты подготавливается один раз. Вспомогательный скрипт: `tools/prepare-cfo-map.ps1`.
+
 ## Структура проекта
 
 - `Form1.cs` — главная форма, карта, справочник, запуск расчетов

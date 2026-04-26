@@ -1,0 +1,12 @@
+﻿{
+    "tiles_file_size_bytes":  117919744,
+    "generated_at_utc":  "2026-04-09T16:03:17.9437440Z",
+    "expected_files":  [
+                           "cfo_manifest.json",
+                           "cfo_style.json",
+                           "cfo_map.mbtiles"
+                       ],
+    "attribution":  "OpenStreetMap contributors (ODbL)",
+    "package":  "SPES_CFO_OFFLINE_MAP",
+    "notes":  "Runtime works fully offline. Replace cfo_map.mbtiles with prepared MBTiles package."
+}

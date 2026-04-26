@@ -15,9 +15,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="BruTile.MbTiles" Version="4.0.0" />
     <PackageReference Include="HIC.System.Windows.Forms.DataVisualization" Version="1.0.0" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3856.49" />
     <PackageReference Include="QuestPDF" Version="2026.2.4" />
+    <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="6.0.1" />
   </ItemGroup>
 
@@ -26,6 +28,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="MapData\Russia\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

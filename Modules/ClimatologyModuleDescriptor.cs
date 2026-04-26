@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using SPES_Raschet.Diagnostics;
+using SPES_Raschet.Services;
 
 namespace SPES_Raschet.Modules
 {
@@ -21,7 +22,21 @@ namespace SPES_Raschet.Modules
         public IReadOnlyList<string> ValidateEnvironment()
         {
             var report = StartupDiagnosticsService.Run();
-            return report.MissingFiles.Select(x => $"Не найден файл данных: {x}").ToList();
+            var issues = report.MissingFiles.Select(x => $"Не найден файл данных: {x}").ToList();
+
+            var cfoMissing = CfoClimateDataService.GetMissingFiles();
+            foreach (var file in cfoMissing)
+            {
+                issues.Add($"Для режима новых данных ЦФО не найден файл: {file}");
+            }
+
+            var cfoMapPackage = OfflineCfoMapPackageService.Validate();
+            foreach (var file in cfoMapPackage.MissingFiles)
+            {
+                issues.Add($"Для офлайн-карты ЦФО не найден файл: {file}");
+            }
+
+            return issues;
         }
     }
 }

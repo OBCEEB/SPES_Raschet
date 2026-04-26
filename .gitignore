@@ -19,3 +19,8 @@ obj/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Large offline map tile databases (build with tools/*.py or prepare-*.ps1)
+*.mbtiles
+*.mbtiles-shm
+*.mbtiles-wal

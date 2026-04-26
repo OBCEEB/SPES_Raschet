@@ -39,10 +39,33 @@ namespace SPES_Raschet
         private readonly SessionCoordinator sessionCoordinator = new SessionCoordinator();
         private Panel mapToolsPanel = null!;
         private Label mapHintLabel = null!;
+        private Panel modeTabsPanel = null!;
+        private Button btnModeLegacy = null!;
+        private Button btnModeCfo = null!;
+        private ClimateMode currentMode = ClimateMode.Legacy;
+        private bool isCfoModeAvailable;
+        private bool isCfoClimateDataAvailable;
+        private string cfoAvailabilityMessage = string.Empty;
+        private OfflineCfoMapControl cfoMapControl = null!;
+        private bool cfoDataHintShown;
+
+        private Button legacyMapZoomInBtn = null!;
+        private Button legacyMapZoomOutBtn = null!;
+        private Button legacyMapResetBtn = null!;
+        private static readonly string[] CfoRegionTokens =
+        {
+            "белгород", "брянск", "владимир", "воронеж", "иванов",
+            "калуж", "костром", "курск", "липец", "москов",
+            "орлов", "рязан", "смолен", "тамбов", "твер",
+            "тул", "ярослав"
+        };
 
         public Form1()
         {
             InitializeComponent();
+            // До ApplyModernDesign: подписка mapPictureBox.Resize вызывает UpdateLegacyRussiaMapLayout.
+            mapRenderer = new GeoMapRenderer();
+
             ApplyModernDesign();
 
             // Настройка логики
@@ -51,10 +74,7 @@ namespace SPES_Raschet
             mapToolTip.ReshowDelay = 100;
             mapToolTip.ShowAlways = true;
 
-            mapRenderer = new GeoMapRenderer();
-
-            // Подписки
-            this.mapPictureBox.Paint += mapPictureBox_Paint;
+            // Подписки (Paint подключён в Form1.Designer.cs)
             this.FormClosing += (s, e) => mapRenderer?.Dispose();
             this.mapPictureBox.MouseMove += mapPictureBox_MouseMove;
             this.mapPictureBox.MouseClick += mapPictureBox_MouseClick;
@@ -184,7 +204,9 @@ namespace SPES_Raschet
             };
             mapPictureBox.Cursor = Cursors.Hand;
             mapPictureBox.TabStop = true;
+            InitializeCfoMapControl();
             InitializeMapToolsOverlay();
+            InitializeModeTabs();
 
             InitializeHelpTab();
 
@@ -243,6 +265,171 @@ namespace SPES_Raschet
             restorePanel.BringToFront();
         }
 
+        private void InitializeModeTabs()
+        {
+            modeTabsPanel = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 42,
+                BackColor = Color.FromArgb(245, 250, 255),
+                Padding = new Padding(10, 6, 10, 6)
+            };
+
+            btnModeLegacy = new Button
+            {
+                Text = "Старые данные",
+                Width = 160,
+                Height = 28,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = AppTheme.PrimaryColor,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Location = new Point(12, 7)
+            };
+            btnModeLegacy.FlatAppearance.BorderSize = 0;
+            btnModeLegacy.Click += (_, _) => SwitchClimateMode(ClimateMode.Legacy, true);
+
+            btnModeCfo = new Button
+            {
+                Text = "Новые данные (ЦФО)",
+                Width = 220,
+                Height = 28,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.White,
+                ForeColor = AppTheme.TextColor,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Location = new Point(180, 7)
+            };
+            btnModeCfo.FlatAppearance.BorderColor = AppTheme.BorderColor;
+            btnModeCfo.FlatAppearance.BorderSize = 1;
+            btnModeCfo.Click += (_, _) => SwitchClimateMode(ClimateMode.NewCfo, true);
+
+            modeTabsPanel.Controls.Add(btnModeLegacy);
+            modeTabsPanel.Controls.Add(btnModeCfo);
+            tabPageCalculator.Controls.Add(modeTabsPanel);
+            modeTabsPanel.BringToFront();
+        }
+
+        private void InitializeCfoMapControl()
+        {
+            cfoMapControl = new OfflineCfoMapControl
+            {
+                Dock = DockStyle.Fill,
+                Visible = false
+            };
+            cfoMapControl.MapClicked += CfoMapControl_MapClicked;
+            mapPictureBox.Controls.Add(cfoMapControl);
+            cfoMapControl.SendToBack();
+        }
+
+        private void CfoMapControl_MapClicked(double lat, double lon)
+        {
+            if (currentMode != ClimateMode.NewCfo)
+                return;
+
+            if (!isCfoClimateDataAvailable)
+            {
+                if (!cfoDataHintShown)
+                {
+                    cfoDataHintShown = true;
+                    UiMessageService.Info(
+                        "Новые данные ЦФО",
+                        "Карта ЦФО доступна, но климатическая база ЦФО пока не подключена.\n\n" +
+                        "Добавьте cfo_settlements.csv и regions_bounds_cfo.json для выбора населенного пункта по клику.",
+                        this);
+                }
+                else
+                {
+                    SetStatusNeutral("Карта ЦФО доступна. Для выбора НП добавьте cfo_settlements.csv и regions_bounds_cfo.json.");
+                }
+                return;
+            }
+
+            var nearest = CfoClimateDataService.FindNearestSettlement(lat, lon);
+            if (nearest == null)
+            {
+                UiMessageService.Info(
+                    "Новые данные ЦФО",
+                    "Поблизости не найден населенный пункт из базы ЦФО.\n\nПопробуйте выбрать точку ближе к крупному населенному пункту.",
+                    this);
+                return;
+            }
+
+            currentSettlement = nearest;
+            selectedRegion = nearest.Region;
+            UpdateStatusWithSelection();
+            SetStatusSuccess($"Выбран (ЦФО): {nearest.CityOrSettlement} ({nearest.Region})");
+        }
+
+        private void UpdateModeSelectorState()
+        {
+            if (btnModeCfo == null || btnModeLegacy == null)
+                return;
+
+            btnModeLegacy.BackColor = currentMode == ClimateMode.Legacy ? AppTheme.PrimaryColor : Color.White;
+            btnModeLegacy.ForeColor = currentMode == ClimateMode.Legacy ? Color.White : AppTheme.TextColor;
+            btnModeLegacy.FlatAppearance.BorderSize = currentMode == ClimateMode.Legacy ? 0 : 1;
+            btnModeLegacy.FlatAppearance.BorderColor = AppTheme.BorderColor;
+
+            btnModeCfo.BackColor = currentMode == ClimateMode.NewCfo ? AppTheme.PrimaryColor : Color.White;
+            btnModeCfo.ForeColor = currentMode == ClimateMode.NewCfo ? Color.White : AppTheme.TextColor;
+            btnModeCfo.FlatAppearance.BorderSize = currentMode == ClimateMode.NewCfo ? 0 : 1;
+            btnModeCfo.FlatAppearance.BorderColor = AppTheme.BorderColor;
+            btnModeCfo.Enabled = isCfoModeAvailable;
+            btnModeCfo.Text = !isCfoModeAvailable
+                ? "Новые данные (ЦФО) — пакет не готов"
+                : (isCfoClimateDataAvailable
+                    ? "Новые данные (ЦФО)"
+                    : "Новые данные (ЦФО, база в подготовке)");
+        }
+
+        private void SwitchClimateMode(ClimateMode mode, bool notifyWhenUnavailable)
+        {
+            if (mode == ClimateMode.NewCfo && !isCfoModeAvailable)
+            {
+                if (notifyWhenUnavailable)
+                {
+                    UiMessageService.Warning(
+                        "Режим данных",
+                        string.IsNullOrWhiteSpace(cfoAvailabilityMessage)
+                            ? "Новый режим ЦФО пока недоступен."
+                            : cfoAvailabilityMessage,
+                        this);
+                }
+
+                currentMode = ClimateMode.Legacy;
+                UpdateModeSelectorState();
+                return;
+            }
+
+            currentMode = mode;
+
+            currentSettlement = null;
+            selectedRegion = null;
+            hoverRegionName = null;
+            cfoDataHintShown = false;
+            btnCalculate.Visible = false;
+            mapRenderer.ResetView();
+            mapToolsPanel.Visible = currentMode == ClimateMode.Legacy;
+            cfoMapControl.Visible = currentMode == ClimateMode.NewCfo;
+            if (currentMode == ClimateMode.NewCfo)
+            {
+                cfoMapControl.TryLoadMapPackage();
+                cfoMapControl.SetCfoBoundaries(GetCfoOverlayBoundaries());
+                cfoMapControl.BringToFront();
+            }
+
+            UpdateModeSelectorState();
+            modeTabsPanel.BringToFront();
+            LoadAllMapData();
+            mapPictureBox.Invalidate();
+
+            if (currentMode == ClimateMode.NewCfo)
+                SetStatusNeutral("Режим новых данных ЦФО активен.");
+            else
+                SetStatusNeutral("Режим старых данных активен.");
+        }
+
         private void InitializeMapToolsOverlay()
         {
             mapToolsPanel = new Panel
@@ -252,7 +439,7 @@ namespace SPES_Raschet
                 BorderStyle = BorderStyle.FixedSingle
             };
 
-            var btnZoomIn = new Button
+            legacyMapZoomInBtn = new Button
             {
                 Text = "+",
                 Width = 42,
@@ -262,14 +449,14 @@ namespace SPES_Raschet
                 ForeColor = AppTheme.TextColor,
                 Location = new Point(10, 8)
             };
-            btnZoomIn.FlatAppearance.BorderColor = AppTheme.BorderColor;
-            btnZoomIn.Click += (_, _) =>
+            legacyMapZoomInBtn.FlatAppearance.BorderColor = AppTheme.BorderColor;
+            legacyMapZoomInBtn.Click += (_, _) =>
             {
                 mapRenderer.Zoom(1.12);
                 mapPictureBox.Invalidate();
             };
 
-            var btnZoomOut = new Button
+            legacyMapZoomOutBtn = new Button
             {
                 Text = "-",
                 Width = 42,
@@ -279,14 +466,14 @@ namespace SPES_Raschet
                 ForeColor = AppTheme.TextColor,
                 Location = new Point(58, 8)
             };
-            btnZoomOut.FlatAppearance.BorderColor = AppTheme.BorderColor;
-            btnZoomOut.Click += (_, _) =>
+            legacyMapZoomOutBtn.FlatAppearance.BorderColor = AppTheme.BorderColor;
+            legacyMapZoomOutBtn.Click += (_, _) =>
             {
                 mapRenderer.Zoom(0.90);
                 mapPictureBox.Invalidate();
             };
 
-            var btnResetView = new Button
+            legacyMapResetBtn = new Button
             {
                 Text = "Сброс",
                 Width = 106,
@@ -296,8 +483,8 @@ namespace SPES_Raschet
                 ForeColor = Color.White,
                 Location = new Point(106, 8)
             };
-            btnResetView.FlatAppearance.BorderSize = 0;
-            btnResetView.Click += (_, _) =>
+            legacyMapResetBtn.FlatAppearance.BorderSize = 0;
+            legacyMapResetBtn.Click += (_, _) =>
             {
                 mapRenderer.ResetView();
                 mapPictureBox.Invalidate();
@@ -315,15 +502,20 @@ namespace SPES_Raschet
                 TextAlign = ContentAlignment.TopLeft
             };
 
-            mapToolsPanel.Controls.Add(btnZoomIn);
-            mapToolsPanel.Controls.Add(btnZoomOut);
-            mapToolsPanel.Controls.Add(btnResetView);
+            mapToolsPanel.Controls.Add(legacyMapZoomInBtn);
+            mapToolsPanel.Controls.Add(legacyMapZoomOutBtn);
+            mapToolsPanel.Controls.Add(legacyMapResetBtn);
             mapToolsPanel.Controls.Add(mapHintLabel);
             mapPictureBox.Controls.Add(mapToolsPanel);
             mapToolsPanel.BringToFront();
 
             PositionMapToolsOverlay();
-            mapPictureBox.Resize += (_, _) => PositionMapToolsOverlay();
+            mapPictureBox.Resize += (_, _) =>
+            {
+                PositionMapToolsOverlay();
+                UpdateLegacyRussiaMapLayout();
+                mapPictureBox.Invalidate();
+            };
         }
 
         private void PositionMapToolsOverlay()
@@ -422,13 +614,38 @@ namespace SPES_Raschet
         {
             LoadGeoData();
             LoadIrradianceAndSunData();
+            LoadCfoData();
             LoadAllMapData();
         }
 
         private void LoadAllMapData()
         {
-            allRegionBoundaries = GeoProcessor.GetAllBoundaries();
+            allRegionBoundaries = currentMode == ClimateMode.NewCfo
+                ? CfoClimateDataService.RegionBoundaries
+                : GeoProcessor.GetAllBoundaries();
+            UpdateLegacyRussiaMapLayout();
             mapPictureBox.Invalidate();
+        }
+
+        private void UpdateLegacyRussiaMapLayout()
+        {
+            if (mapRenderer == null)
+                return;
+
+            // Векторная карта РФ без OSM/Mercator — иначе «полмира» в кадре и разрез у ±180°.
+            mapRenderer.ClearMercatorTileView();
+            ApplyLegacyMapToolsState();
+        }
+
+        private void ApplyLegacyMapToolsState()
+        {
+            if (legacyMapZoomInBtn == null || mapRenderer == null)
+                return;
+
+            legacyMapZoomInBtn.Enabled = true;
+            legacyMapZoomOutBtn.Enabled = true;
+            legacyMapResetBtn.Enabled = true;
+            mapHintLabel.Text = "Колесо: масштаб\nСредняя кнопка: перетаскивание\nДвойной клик: сброс";
         }
 
         private void LoadGeoData()
@@ -442,6 +659,56 @@ namespace SPES_Raschet
             {
                 SetStatusError("Не удалось загрузить геоданные.");
             }
+        }
+
+        private void LoadCfoData()
+        {
+            var cfoResult = CfoClimateDataService.LoadAll();
+            var mapPackageCheck = OfflineCfoMapPackageService.Validate();
+
+            isCfoClimateDataAvailable = cfoResult.Success;
+            isCfoModeAvailable = mapPackageCheck.IsReady;
+
+            if (!mapPackageCheck.IsReady)
+            {
+                cfoAvailabilityMessage =
+                    "Не найден локальный пакет офлайн-карты ЦФО.\n\n" +
+                    "Проверьте наличие файлов:\n" +
+                    string.Join("\n", mapPackageCheck.MissingFiles.Select(x => "• " + x));
+            }
+            else
+            {
+                cfoAvailabilityMessage = cfoResult.Success
+                    ? string.Empty
+                    : "Офлайн-карта ЦФО готова, но климатические данные нового режима пока не подключены.";
+            }
+
+            UpdateModeSelectorState();
+            if (currentMode == ClimateMode.NewCfo && !isCfoModeAvailable)
+            {
+                SwitchClimateMode(ClimateMode.Legacy, false);
+            }
+        }
+
+        private Dictionary<string, Dictionary<string, List<List<double>>>> GetCfoOverlayBoundaries()
+        {
+            if (CfoClimateDataService.RegionBoundaries.Count > 0)
+                return CfoClimateDataService.RegionBoundaries;
+
+            if (GeoDataHandler.RegionBoundaries.Count == 0)
+                return new Dictionary<string, Dictionary<string, List<List<double>>>>();
+
+            var result = new Dictionary<string, Dictionary<string, List<List<double>>>>();
+            foreach (var entry in GeoDataHandler.RegionBoundaries)
+            {
+                var key = entry.Key.ToLowerInvariant();
+                if (CfoRegionTokens.Any(token => key.Contains(token)))
+                {
+                    result[entry.Key] = entry.Value;
+                }
+            }
+
+            return result;
         }
 
         private void LoadIrradianceAndSunData()
@@ -530,12 +797,18 @@ namespace SPES_Raschet
 
         private void mapPictureBox_Paint(object? sender, PaintEventArgs e)
         {
+            if (currentMode == ClimateMode.NewCfo)
+                return;
+
             if (allRegionBoundaries != null)
                 mapRenderer.DrawAllRegions(e.Graphics, mapPictureBox.Size, allRegionBoundaries, hoverRegionName, selectedRegion);
         }
 
         private void mapPictureBox_MouseMove(object? sender, MouseEventArgs e)
         {
+            if (currentMode == ClimateMode.NewCfo)
+                return;
+
             if (mapInteraction.IsPanning)
             {
                 var delta = mapInteraction.ConsumePanDelta(e.Location);
@@ -567,6 +840,9 @@ namespace SPES_Raschet
 
         private void mapPictureBox_MouseClick(object? sender, MouseEventArgs e)
         {
+            if (currentMode == ClimateMode.NewCfo)
+                return;
+
             if (mapInteraction.IsPanning || e.Button != MouseButtons.Left) return;
 
             Point untransformedPoint = UntransformPoint(e.Location, mapPictureBox.Size);
@@ -584,6 +860,9 @@ namespace SPES_Raschet
 
         private void mapPictureBox_MouseDown(object? sender, MouseEventArgs e)
         {
+            if (currentMode == ClimateMode.NewCfo)
+                return;
+
             mapInteraction.BeginPan(e.Button, e.Location);
             if (!mapInteraction.IsPanning) return;
             mapPictureBox.Cursor = Cursors.SizeAll;
@@ -592,12 +871,18 @@ namespace SPES_Raschet
 
         private void mapPictureBox_MouseUp(object? sender, MouseEventArgs e)
         {
+            if (currentMode == ClimateMode.NewCfo)
+                return;
+
             mapInteraction.EndPan(e.Button);
             mapPictureBox.Cursor = Cursors.Hand;
         }
 
         private void mapPictureBox_MouseWheel(object? sender, MouseEventArgs e)
         {
+            if (currentMode == ClimateMode.NewCfo)
+                return;
+
             mapRenderer.Zoom(e.Delta > 0 ? 1.12 : 0.90);
             mapPictureBox.Invalidate();
         }
@@ -621,7 +906,9 @@ namespace SPES_Raschet
 
         private void ShowSettlementsForRegion(string regionName)
         {
-            var settlements = GeoProcessor.GetSettlementsByRegion(regionName);
+            var settlements = currentMode == ClimateMode.NewCfo
+                ? CfoClimateDataService.GetSettlementsByRegion(regionName)
+                : GeoProcessor.GetSettlementsByRegion(regionName);
             if (settlements.Any())
             {
                 mapToolTip.Hide(mapPictureBox);
@@ -723,9 +1010,34 @@ namespace SPES_Raschet
         {
             if (currentSettlement != null)
             {
+                PublishSelectionBridge(currentSettlement);
+
+                if (currentMode == ClimateMode.NewCfo)
+                {
+                    UiMessageService.Info(
+                        "Новые данные ЦФО",
+                        "Режим новых данных уже использует отдельную базу ЦФО и единый контракт передачи в будущий модуль расчета.\n\n" +
+                        "Расчетные таблицы и графики для нового режима будут подключены следующим этапом.",
+                        this);
+                    return;
+                }
+
                 var resultsForm = new CalculationResultsForm(currentSettlement);
                 resultsForm.Show();
             }
+        }
+
+        private void PublishSelectionBridge(SettlementData settlement)
+        {
+            ClimateSelectionBridge.Publish(new ClimateSelectionPayload
+            {
+                Mode = currentMode,
+                Region = settlement.Region,
+                Settlement = settlement.CityOrSettlement,
+                Latitude = settlement.Latitude,
+                Longitude = settlement.Longitude,
+                TimeZoneOffset = settlement.TimeZoneOffset
+            });
         }
     }
 }

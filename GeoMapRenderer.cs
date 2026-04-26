@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
+using SPES_Raschet.Services;
 
 namespace SPES_Raschet
 {
@@ -24,6 +25,9 @@ namespace SPES_Raschet
         private readonly SolidBrush defaultBrush = new SolidBrush(Color.FromArgb(222, 226, 231));
         private readonly SolidBrush hoverBrush = new SolidBrush(Color.FromArgb(109, 186, 234));
         private readonly SolidBrush selectedBrush = new SolidBrush(Color.FromArgb(117, 186, 155));
+        private readonly SolidBrush defaultBrushOverTiles = new SolidBrush(Color.FromArgb(195, 222, 226, 231));
+        private readonly SolidBrush hoverBrushOverTiles = new SolidBrush(Color.FromArgb(175, 109, 186, 234));
+        private readonly SolidBrush selectedBrushOverTiles = new SolidBrush(Color.FromArgb(185, 117, 186, 155));
 
         // Параметры последней проекции
         private double lastScaleX = 1.0, lastScaleY = 1.0, lastDx = 0.0, lastDy = 0.0;
@@ -31,6 +35,34 @@ namespace SPES_Raschet
         private double userZoom = 1.0;
         private double userPanX = 0.0;
         private double userPanY = 0.0;
+
+        // Фиксированный Mercator-вид: прямоугольник в мировых пикселях вписывается в окно (как старая карта по РФ).
+        private bool _mercatorTileMode;
+        private int _mercZoom;
+        private RectangleF _mercWorldBounds;
+        private Size _mercClientSize;
+
+        public bool IsMercatorTileMode => _mercatorTileMode;
+
+        public int MercatorZoomLevel => _mercZoom;
+
+        public RectangleF MercatorWorldBounds => _mercWorldBounds;
+
+        public void SetMercatorTileView(Size clientSize, int zoom, RectangleF worldBoundsMercatorPixels)
+        {
+            _mercatorTileMode = true;
+            _mercClientSize = clientSize;
+            _mercZoom = zoom;
+            _mercWorldBounds = worldBoundsMercatorPixels;
+            userZoom = 1.0;
+            userPanX = 0.0;
+            userPanY = 0.0;
+        }
+
+        public void ClearMercatorTileView()
+        {
+            _mercatorTileMode = false;
+        }
 
         /// <summary>
         /// Нормализует долготу, чтобы Чукотка (-170) стала продолжением России (190).
@@ -48,6 +80,13 @@ namespace SPES_Raschet
             string? selectedRegionName = null)
         {
             if (allBoundaries == null || !allBoundaries.Any()) return;
+
+            if (_mercatorTileMode)
+            {
+                _mercClientSize = targetSize;
+                DrawAllRegionsMercator(graphics, targetSize, allBoundaries, hoverRegionName, selectedRegionName);
+                return;
+            }
 
             // 1. Определяем границы (BBox)
             (double minLon, double maxLon, double minLat, double maxLat) = GetBoundingBox(allBoundaries);
@@ -102,6 +141,71 @@ namespace SPES_Raschet
             }
 
             graphics.Restore(state);
+        }
+
+        private void DrawAllRegionsMercator(
+            Graphics graphics,
+            Size targetSize,
+            Dictionary<string, Dictionary<string, List<List<double>>>> allBoundaries,
+            string? hoverRegionName,
+            string? selectedRegionName)
+        {
+            RussiaOverviewMapTransform.Compute(targetSize, _mercWorldBounds, out float s, out float offX, out float offY);
+
+            lastScaleX = 1;
+            lastScaleY = 1;
+            lastDx = 0;
+            lastDy = 0;
+            lastMinLon = 0;
+            lastMaxLat = 0;
+
+            GraphicsState state = graphics.Save();
+            graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+            foreach (var regionPair in allBoundaries)
+            {
+                string regionName = regionPair.Key;
+                foreach (var polyPair in regionPair.Value)
+                {
+                    var geoCoords = polyPair.Value;
+                    if (geoCoords == null || geoCoords.Count < 2) continue;
+
+                    var screenPoints = ProjectRegionMercator(geoCoords, _mercWorldBounds, s, offX, offY, _mercZoom);
+                    if (screenPoints.Count > 1)
+                    {
+                        SolidBrush brush = defaultBrushOverTiles;
+                        if (regionName == selectedRegionName) brush = selectedBrushOverTiles;
+                        if (regionName == hoverRegionName) brush = hoverBrushOverTiles;
+                        graphics.FillPolygon(brush, screenPoints.ToArray());
+                        graphics.DrawPolygon(regionPen, screenPoints.ToArray());
+                    }
+                }
+            }
+
+            graphics.Restore(state);
+        }
+
+        private static List<PointF> ProjectRegionMercator(
+            List<List<double>> geoCoords,
+            RectangleF worldBounds,
+            float scale,
+            float offX,
+            float offY,
+            int zoom)
+        {
+            var screenPoints = new List<PointF>();
+            foreach (var p in geoCoords)
+            {
+                if (p.Count < 2) continue;
+                double lat = p[0];
+                double lonM = MercatorTileMath.ToMercatorLongitude(p[1]);
+                var wp = MercatorTileMath.LatLonToPixel(lat, lonM, zoom);
+                RussiaOverviewMapTransform.WorldToScreen(
+                    wp.X, wp.Y, worldBounds, scale, offX, offY, out float sx, out float sy);
+                screenPoints.Add(new PointF(sx, sy));
+            }
+
+            return screenPoints;
         }
 
         // -------------------------------------------------------------------------
@@ -235,6 +339,16 @@ namespace SPES_Raschet
 
         public List<double>? PixelToGeo(Point screenPoint)
         {
+            if (_mercatorTileMode)
+            {
+                RussiaOverviewMapTransform.Compute(_mercClientSize, _mercWorldBounds, out float s, out float ox, out float oy);
+                RussiaOverviewMapTransform.ScreenToWorld(
+                    screenPoint.X, screenPoint.Y, _mercWorldBounds, s, ox, oy, out float worldX, out float worldY);
+                var (mercLat, mercLon) = MercatorTileMath.PixelToLatLon(new PointF((float)worldX, (float)worldY), _mercZoom);
+                double normLon = mercLon < 0 ? mercLon + 360.0 : mercLon;
+                return new List<double> { normLon, mercLat };
+            }
+
             if (lastScaleX <= 0 || lastScaleY <= 0) return null;
 
             double lon = (screenPoint.X - lastDx) / lastScaleX + lastMinLon;
@@ -245,6 +359,8 @@ namespace SPES_Raschet
 
         public void Zoom(double delta)
         {
+            if (_mercatorTileMode)
+                return;
             userZoom *= delta;
             if (userZoom < 0.7) userZoom = 0.7;
             if (userZoom > 4.0) userZoom = 4.0;
@@ -252,12 +368,16 @@ namespace SPES_Raschet
 
         public void Pan(int deltaX, int deltaY)
         {
+            if (_mercatorTileMode)
+                return;
             userPanX += deltaX;
             userPanY += deltaY;
         }
 
         public void ResetView()
         {
+            if (_mercatorTileMode)
+                return;
             userZoom = 1.0;
             userPanX = 0.0;
             userPanY = 0.0;
@@ -299,6 +419,9 @@ namespace SPES_Raschet
             defaultBrush.Dispose();
             hoverBrush.Dispose();
             selectedBrush.Dispose();
+            defaultBrushOverTiles.Dispose();
+            hoverBrushOverTiles.Dispose();
+            selectedBrushOverTiles.Dispose();
         }
     }
 }
