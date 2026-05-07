@@ -24,3 +24,8 @@ Thumbs.db
 *.mbtiles
 *.mbtiles-shm
 *.mbtiles-wal
+
+# Локальная метеобаза (создаётся импортом из CSV)
+Data/spes_meteo.sqlite
+Data/spes_meteo.sqlite-shm
+Data/spes_meteo.sqlite-wal

@@ -6,6 +6,7 @@ using System.Text;
 using System.Windows.Forms;
 using SPES_Raschet.Modules;
 using SPES_Raschet.Services;
+using SPES_Raschet.Services.Meteo;
 using SPES_Raschet.Session;
 
 namespace SPES_Raschet
@@ -16,6 +17,7 @@ namespace SPES_Raschet
         private Panel diagnosticsCard = null!;
         private Panel helpCard = null!;
         private Button btnDiagnostics = null!;
+        private Button btnMeteoSummary = null!;
         private RichTextBox helpText = null!;
         private ComboBox themeSelector = null!;
         private Label lblTheme = null!;
@@ -64,8 +66,10 @@ namespace SPES_Raschet
                 ColumnCount = 1,
                 RowCount = 2
             };
-            rightCol.RowStyles.Add(new RowStyle(SizeType.Percent, 38));
-            rightCol.RowStyles.Add(new RowStyle(SizeType.Percent, 62));
+            // В верхней карточке 4 управляющих элемента; даем ей больше места,
+            // чтобы нижняя кнопка не обрезалась и не "уезжала" под блок справки.
+            rightCol.RowStyles.Add(new RowStyle(SizeType.Percent, 48));
+            rightCol.RowStyles.Add(new RowStyle(SizeType.Percent, 52));
             root.Controls.Add(rightCol, 1, 0);
 
             diagnosticsCard = CreateCard("Средства диагностики");
@@ -113,6 +117,10 @@ namespace SPES_Raschet
             btnDiagnostics = CreateActionButton("Проверить файлы данных");
             btnDiagnostics.Click += (_, _) => ShowDiagnostics();
             diagnosticsFlow.Controls.Add(btnDiagnostics);
+
+            btnMeteoSummary = CreateActionButton("Сводка локальной метеобазы");
+            btnMeteoSummary.Click += (_, _) => RunMeteoSummary();
+            diagnosticsFlow.Controls.Add(btnMeteoSummary);
 
             helpCard = CreateCard("Справка");
             rightCol.Controls.Add(helpCard, 0, 1);
@@ -184,6 +192,7 @@ namespace SPES_Raschet
             sb.AppendLine("• Тема интерфейса меняется в блоке \"Цветовая схема\".");
             sb.AppendLine("• Если ранее работа уже велась, модуль может предложить восстановить сессию.");
             sb.AppendLine("• При проблемах сначала проверьте наличие файлов данных.");
+            sb.AppendLine("• Метеоданные поставляются в комплекте с программой и не требуют ручного импорта.");
 
             return sb.ToString().TrimEnd();
         }
@@ -266,6 +275,87 @@ namespace SPES_Raschet
                 this);
         }
 
+        private bool EnsureMeteoDatabaseReady(bool showWarningWhenUnavailable)
+        {
+            var summary = MeteoQueryService.GetSummary();
+            if (summary.Exists)
+                return true;
+
+            var archive = MeteoDbPaths.GetDefaultMeteorologyArchivePath();
+            if (!Directory.Exists(archive))
+            {
+                if (showWarningWhenUnavailable)
+                {
+                    UiMessageService.Warning(
+                        "Метеобаза",
+                        "Файл локальной метеобазы не найден, и архив для автоинициализации тоже отсутствует.\n\n" +
+                        "Ожидаемые пути:\n" +
+                        "• " + MeteoDbPaths.GetDatabaseFilePath() + "\n" +
+                        "• " + archive,
+                        this);
+                }
+                return false;
+            }
+
+            UseWaitCursor = true;
+            Cursor = Cursors.WaitCursor;
+            try
+            {
+                var result = MeteoArchiveImporter.ImportArchive(archive, null, clearExistingObservations: true);
+                if (result.Success)
+                {
+                    return true;
+                }
+                if (showWarningWhenUnavailable)
+                {
+                    UiMessageService.Warning(
+                        "Метеобаза",
+                        "Не удалось автоматически инициализировать метеобазу.\n\n" + result.Message,
+                        this);
+                }
+                return false;
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+                UseWaitCursor = false;
+            }
+        }
+
+        private void RunMeteoSummary()
+        {
+            if (!EnsureMeteoDatabaseReady(showWarningWhenUnavailable: true))
+                return;
+
+            var s = MeteoQueryService.GetSummary();
+            if (!s.Exists)
+            {
+                UiMessageService.Info(
+                    "Метеобаза",
+                    "Файл базы ещё не создан.\n\n" + s.DatabasePath +
+                    "\n\nВыполните импорт CSV (кнопка выше), если папка «метеорология» уже лежит рядом с программой.",
+                    this);
+                return;
+            }
+
+            var stations = MeteoQueryService.ListStations();
+            var sb = new StringBuilder();
+            sb.AppendLine("Путь: " + s.DatabasePath);
+            sb.AppendLine();
+            sb.AppendLine($"Станций: {s.StationCount}, наборов данных: {s.DatasetCount}, строк наблюдений: {s.ObservationCount}");
+            sb.AppendLine();
+            if (stations.Count == 0)
+                sb.AppendLine("Таблица станций пуста (импорт не завершён?).");
+            else
+            {
+                sb.AppendLine("Станции:");
+                foreach (var st in stations)
+                    sb.AppendLine($"• [{st.Id}] {st.DisplayName}");
+            }
+
+            UiMessageService.Info("Метеобаза", sb.ToString().TrimEnd(), this);
+        }
+
         private void ApplySelectedTheme()
         {
             var selectedTheme = IndexToTheme(themeSelector.SelectedIndex);
@@ -290,6 +380,7 @@ namespace SPES_Raschet
                 StyleButton(moduleButton);
             }
             StyleButton(btnDiagnostics);
+            StyleButton(btnMeteoSummary);
         }
 
         private static void StyleButton(Button btn)

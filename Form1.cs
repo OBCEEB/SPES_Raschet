@@ -7,6 +7,7 @@ using System.Linq;
 using System.Windows.Forms;
 using System.Diagnostics;
 using SPES_Raschet.Services;
+using SPES_Raschet.Services.Meteo;
 
 namespace SPES_Raschet
 {
@@ -34,7 +35,6 @@ namespace SPES_Raschet
         private Button btnNavData = null!;
         private Button btnNavHelp = null!;
         private Panel navIndicator = null!; // Полоска активной вкладки
-        private Panel restorePanel = null!;
         private readonly MapInteractionService mapInteraction = new MapInteractionService();
         private readonly SessionCoordinator sessionCoordinator = new SessionCoordinator();
         private Panel mapToolsPanel = null!;
@@ -148,7 +148,7 @@ namespace SPES_Raschet
 
             // Кнопки навигации
             btnNavHelp = CreateNavButton("Инструкция", 2);
-            btnNavData = CreateNavButton("Справочник", 1);
+            btnNavData = CreateNavButton("Справочная литература", 1);
             btnNavMap = CreateNavButton("Карта и Расчет", 0);
 
             panelMenu.Controls.Add(btnNavHelp);
@@ -213,56 +213,6 @@ namespace SPES_Raschet
             SwitchTab(0, btnNavMap);
             SetStatusNeutral("Данные геопозиции загружены.");
 
-            restorePanel = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 42,
-                Visible = false,
-                BackColor = Color.FromArgb(255, 248, 221),
-                Padding = new Padding(10, 8, 10, 6)
-            };
-
-            var restoreLabel = new Label
-            {
-                AutoSize = true,
-                Text = "Найдена предыдущая сессия. Восстановить?",
-                ForeColor = AppTheme.TextColor,
-                Dock = DockStyle.Left
-            };
-            var btnRestore = new Button
-            {
-                Text = "Восстановить",
-                Width = 110,
-                Height = 26,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = AppTheme.PrimaryColor,
-                ForeColor = Color.White,
-                Dock = DockStyle.Right
-            };
-            btnRestore.FlatAppearance.BorderSize = 0;
-            btnRestore.Click += (_, _) => RestorePreviousSession();
-
-            var btnDismiss = new Button
-            {
-                Text = "Игнорировать",
-                Width = 110,
-                Height = 26,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.White,
-                ForeColor = AppTheme.TextColor,
-                Dock = DockStyle.Right
-            };
-            btnDismiss.Click += (_, _) =>
-            {
-                restorePanel.Visible = false;
-                PositionMapToolsOverlay();
-            };
-
-            restorePanel.Controls.Add(btnRestore);
-            restorePanel.Controls.Add(btnDismiss);
-            restorePanel.Controls.Add(restoreLabel);
-            tabPageCalculator.Controls.Add(restorePanel);
-            restorePanel.BringToFront();
         }
 
         private void InitializeModeTabs()
@@ -277,8 +227,8 @@ namespace SPES_Raschet
 
             btnModeLegacy = new Button
             {
-                Text = "Старые данные",
-                Width = 160,
+                Text = "Справочная литература",
+                Width = 190,
                 Height = 28,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = AppTheme.PrimaryColor,
@@ -291,14 +241,14 @@ namespace SPES_Raschet
 
             btnModeCfo = new Button
             {
-                Text = "Новые данные (ЦФО)",
-                Width = 220,
+                Text = "Актуальная климатология",
+                Width = 240,
                 Height = 28,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.White,
                 ForeColor = AppTheme.TextColor,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                Location = new Point(180, 7)
+                Location = new Point(210, 7)
             };
             btnModeCfo.FlatAppearance.BorderColor = AppTheme.BorderColor;
             btnModeCfo.FlatAppearance.BorderSize = 1;
@@ -326,6 +276,17 @@ namespace SPES_Raschet
         {
             if (currentMode != ClimateMode.NewCfo)
                 return;
+
+            var clickedRegion = TryDetectCfoRegionByGeo(lat, lon);
+            if (!string.IsNullOrWhiteSpace(clickedRegion))
+            {
+                selectedRegion = clickedRegion;
+                if (clickedRegion.Contains("липец", StringComparison.OrdinalIgnoreCase))
+                {
+                    ShowLipetskMeteoRecords();
+                    return;
+                }
+            }
 
             if (!isCfoClimateDataAvailable)
             {
@@ -361,6 +322,26 @@ namespace SPES_Raschet
             SetStatusSuccess($"Выбран (ЦФО): {nearest.CityOrSettlement} ({nearest.Region})");
         }
 
+        private string? TryDetectCfoRegionByGeo(double latitude, double longitude)
+        {
+            if (allRegionBoundaries == null || allRegionBoundaries.Count == 0)
+                return null;
+
+            // GeoMapRenderer expects [lon, lat].
+            var point = new List<double> { longitude < 0 ? longitude + 360.0 : longitude, latitude };
+            foreach (var regionEntry in allRegionBoundaries)
+            {
+                foreach (var polygon in regionEntry.Value.Values)
+                {
+                    if (polygon == null || polygon.Count < 3)
+                        continue;
+                    if (mapRenderer.IsPointInPolygon(point, polygon))
+                        return regionEntry.Key;
+                }
+            }
+            return null;
+        }
+
         private void UpdateModeSelectorState()
         {
             if (btnModeCfo == null || btnModeLegacy == null)
@@ -376,11 +357,7 @@ namespace SPES_Raschet
             btnModeCfo.FlatAppearance.BorderSize = currentMode == ClimateMode.NewCfo ? 0 : 1;
             btnModeCfo.FlatAppearance.BorderColor = AppTheme.BorderColor;
             btnModeCfo.Enabled = isCfoModeAvailable;
-            btnModeCfo.Text = !isCfoModeAvailable
-                ? "Новые данные (ЦФО) — пакет не готов"
-                : (isCfoClimateDataAvailable
-                    ? "Новые данные (ЦФО)"
-                    : "Новые данные (ЦФО, база в подготовке)");
+            btnModeCfo.Text = "Актуальная климатология";
         }
 
         private void SwitchClimateMode(ClimateMode mode, bool notifyWhenUnavailable)
@@ -425,9 +402,9 @@ namespace SPES_Raschet
             mapPictureBox.Invalidate();
 
             if (currentMode == ClimateMode.NewCfo)
-                SetStatusNeutral("Режим новых данных ЦФО активен.");
+                SetStatusNeutral("Режим «Актуальная климатология» активен.");
             else
-                SetStatusNeutral("Режим старых данных активен.");
+                SetStatusNeutral("Режим «Справочная литература» активен.");
         }
 
         private void InitializeMapToolsOverlay()
@@ -506,7 +483,7 @@ namespace SPES_Raschet
             mapToolsPanel.Controls.Add(legacyMapZoomOutBtn);
             mapToolsPanel.Controls.Add(legacyMapResetBtn);
             mapToolsPanel.Controls.Add(mapHintLabel);
-            mapPictureBox.Controls.Add(mapToolsPanel);
+            tabPageCalculator.Controls.Add(mapToolsPanel);
             mapToolsPanel.BringToFront();
 
             PositionMapToolsOverlay();
@@ -520,12 +497,20 @@ namespace SPES_Raschet
 
         private void PositionMapToolsOverlay()
         {
-            if (mapToolsPanel == null) return;
-            int topOffset = restorePanel != null && restorePanel.Visible ? 58 : 16;
+            if (mapToolsPanel == null || tabPageCalculator == null || mapPictureBox == null)
+                return;
 
-            mapToolsPanel.Location = new Point(
-                Math.Max(8, mapPictureBox.Width - mapToolsPanel.Width - 16),
-                topOffset);
+            int left = Math.Max(8, mapPictureBox.Left + mapPictureBox.Width - mapToolsPanel.Width - 16);
+            int top = mapPictureBox.Top + 16;
+            if (modeTabsPanel != null && modeTabsPanel.Visible)
+            {
+                int minTop = modeTabsPanel.Bottom + 8;
+                if (top < minTop)
+                    top = minTop;
+            }
+
+            mapToolsPanel.Location = new Point(left, top);
+            mapToolsPanel.BringToFront();
         }
 
         private Button CreateNavButton(string text, int tabIndex)
@@ -927,6 +912,65 @@ namespace SPES_Raschet
                 this);
         }
 
+        private bool EnsureMeteoDatabaseReady(bool showWarning)
+        {
+            var summary = MeteoQueryService.GetSummary();
+            if (summary.Exists)
+                return true;
+
+            var archive = MeteoDbPaths.GetDefaultMeteorologyArchivePath();
+            if (!System.IO.Directory.Exists(archive))
+            {
+                if (showWarning)
+                {
+                    UiMessageService.Warning(
+                        "Метеобаза",
+                        "Локальная база метеоданных не найдена.\n\n" +
+                        "Ожидаемый файл:\n" + MeteoDbPaths.GetDatabaseFilePath(),
+                        this);
+                }
+                return false;
+            }
+
+            try
+            {
+                Cursor = Cursors.WaitCursor;
+                var result = MeteoArchiveImporter.ImportArchive(archive, null, clearExistingObservations: true);
+                if (result.Success)
+                    return true;
+                if (showWarning)
+                    UiMessageService.Warning("Метеобаза", "Не удалось инициализировать базу:\n" + result.Message, this);
+                return false;
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+            }
+        }
+
+        private void ShowLipetskMeteoRecords()
+        {
+            if (!EnsureMeteoDatabaseReady(showWarning: true))
+                return;
+
+            var stationId = MeteoQueryService.TryGetStationIdByDisplayName("липецкая область");
+            if (stationId is null)
+            {
+                UiMessageService.Warning("Таблицы НГО", "Станция «липецкая область» не найдена в базе.", this);
+                return;
+            }
+
+            var datasetId = MeteoQueryService.TryGetDatasetId(stationId.Value, "Суммарная солнечная радиация");
+            if (datasetId is null)
+            {
+                UiMessageService.Warning("Актуальная климатология", "Набор «Суммарная солнечная радиация» не найден в базе.", this);
+                return;
+            }
+
+            using var form = new MeteoRecordsForm(stationId.Value, datasetId.Value, "Липецкая область");
+            form.ShowDialog(this);
+        }
+
         private void UpdateStatusWithSelection()
         {
             if (currentSettlement != null)
@@ -960,10 +1004,21 @@ namespace SPES_Raschet
 
         private void ShowRestorePromptIfNeeded()
         {
-            if (!sessionCoordinator.HasPendingState) return;
-            restorePanel.Visible = true;
-            if (IsHandleCreated) BeginInvoke((Action)PositionMapToolsOverlay);
-            else PositionMapToolsOverlay();
+            if (!sessionCoordinator.HasPendingState)
+                return;
+
+            var answer = MessageBox.Show(
+                this,
+                "Найдена предыдущая сессия.\n\nВосстановить выбранный населенный пункт и параметры фильтра?",
+                "Восстановление сессии",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button1);
+
+            if (answer == DialogResult.Yes)
+                RestorePreviousSession();
+            else
+                _ = sessionCoordinator.ConsumePendingState();
         }
 
         private void RestorePreviousSession()
@@ -971,13 +1026,8 @@ namespace SPES_Raschet
             var state = sessionCoordinator.ConsumePendingState();
             if (state == null)
             {
-                restorePanel.Visible = false;
-                BeginInvoke((Action)PositionMapToolsOverlay);
                 return;
             }
-
-            restorePanel.Visible = false;
-            BeginInvoke((Action)PositionMapToolsOverlay);
 
             var settlement = sessionCoordinator.ResolveSettlement(state);
 

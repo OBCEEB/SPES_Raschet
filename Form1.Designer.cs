@@ -1,4 +1,4 @@
-﻿namespace SPES_Raschet
+namespace SPES_Raschet
 {
     partial class Form1
     {
@@ -97,7 +97,7 @@
             this.tabPageViewer.Padding = new System.Windows.Forms.Padding(3);
             this.tabPageViewer.Size = new System.Drawing.Size(1190, 577);
             this.tabPageViewer.TabIndex = 1;
-            this.tabPageViewer.Text = "Справочник";
+            this.tabPageViewer.Text = "Справочная литература";
             this.tabPageViewer.UseVisualStyleBackColor = true;
             // 
             // tlpViewerMain
