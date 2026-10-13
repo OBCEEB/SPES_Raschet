@@ -35,3 +35,15 @@ Data/*.sqlite-wal
 
 # Сырой метеоархив (не коммитить)
 метеорология/
+
+# Analysis local environment and large processed artefacts
+analysis/.venv/
+analysis/.wheels/
+analysis/src/__pycache__/
+analysis/**/__pycache__/
+data/processed/*.parquet
+data/processed/*.csv
+Data/processed/*.parquet
+Data/processed/*.csv
+!data/processed/.gitkeep
+!Data/processed/.gitkeep

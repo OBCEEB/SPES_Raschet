@@ -41,6 +41,9 @@ paths:
   figures_dir: figures
   tables_dir: tables
   reports_dir: reports
+  # Regenerate processed/tables/figures/reports:
+  #   analysis\.venv\Scripts\python.exe analysis\src\run_pipeline.py
+  # See analysis/README.md (export + QC only for now).
 
 period:
   # From current Data/spes_meteo.sqlite probe; re-check after re-import

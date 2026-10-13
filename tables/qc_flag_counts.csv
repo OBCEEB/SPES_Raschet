@@ -1,0 +1,10 @@
+flag,count,fraction
+qc_missing_row,28025,0.5624799293513166
+qc_missing_q,28025,0.5624799293513166
+qc_missing_ssd,28025,0.5624799293513166
+qc_missing_ngo,28025,0.5624799293513166
+qc_missing_t,28025,0.5624799293513166
+qc_negative_q,0,0.0
+qc_night_suspect,5372,0.10781952472703918
+qc_ngo_censored,0,0.0
+qc_flatline_q,2938,0.05896756583172768

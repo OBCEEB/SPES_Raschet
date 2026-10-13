@@ -1,0 +1,8 @@
+# Analysis environment (Python 3.8+). Prefer local venv:
+#   py -3 -m venv analysis/.venv
+#   analysis\.venv\Scripts\python.exe -m pip install -r analysis/requirements.txt
+pandas>=2.0,<2.1
+pyarrow>=14,<15
+PyYAML>=6,<7
+matplotlib>=3.7,<3.8
+numpy>=1.20,<2
