@@ -1,0 +1,77 @@
+# Research configuration — Lipetsk radiation adjustment study
+# Unknown values are left null; do not invent them.
+
+site:
+  name: Lipetsk
+  # Primary radiation + sunshine duration (SSD) site
+  radiation:
+    name: Kon-Kolodez
+    name_ru: Конь-Колодезь
+    latitude_deg: 52.135409
+    longitude_deg: 39.163510
+    elevation_m: null
+    timezone: Europe/Moscow
+  # Cloud-base (НГО) site — ASMG Lipetsk airport
+  ngo:
+    name: Lipetsk airport
+    name_ru: Аэропорт Липецк
+    asmg_station_code: "27930"
+    latitude_deg: 52.697862
+    longitude_deg: 39.524295
+    elevation_m: null
+    timezone: Europe/Moscow
+  # Modeling choice: treat NGO as co-located with radiation; document spatial mismatch
+  model_co_located: true
+  co_location_note: >
+    No co-located cloud series at Kon’-Kolodez’. For modeling, treat cloudiness/NGO
+    as if measured at the radiation site; spatial mismatch is a documented limitation.
+  # Convenience fields used by pipeline (radiation site coords)
+  latitude_deg: 52.135409
+  longitude_deg: 39.163510
+  elevation_m: null
+  timezone: Europe/Moscow
+
+paths:
+  # Primary analysis series (existing merged 30-min Q+NGO)
+  sqlite: Data/spes_meteo.sqlite
+  handbook_dir: data/raw/handbook
+  raw_meteo_archive: метеорология
+  interim_dir: data/interim
+  processed_dir: data/processed
+  figures_dir: figures
+  tables_dir: tables
+  reports_dir: reports
+
+period:
+  # From current Data/spes_meteo.sqlite probe; re-check after re-import
+  start: "2023-02-28"
+  end: "2025-12-31"
+  cadence_minutes: 30
+
+quality_control:
+  min_solar_elevation_deg: 5
+  allow_cloud_enhancement: true
+  flatline_window_hours: 6
+  max_missing_fraction: 0.2
+
+model:
+  target: clear_sky_index
+  transformation: null  # log_or_logit_to_be_selected
+  seasonal_spline: cyclic
+  seasonal_basis_dimension: null  # to_be_selected_on_train
+  include_year_random_effect: true
+  include_day_random_effect: true
+  include_ar1_residual: true
+  include_sunshine_fraction: true
+  include_cloud_base: true
+
+validation:
+  strategy: leave_one_year_out
+  test_year: null
+  block_bootstrap: daily
+
+collector:
+  area_m2: null
+  tilt_deg: null
+  azimuth_deg: null
+  efficiency_model: null

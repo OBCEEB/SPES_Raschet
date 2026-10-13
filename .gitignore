@@ -29,3 +29,9 @@ Thumbs.db
 Data/spes_meteo.sqlite
 Data/spes_meteo.sqlite-shm
 Data/spes_meteo.sqlite-wal
+Data/*.sqlite
+Data/*.sqlite-shm
+Data/*.sqlite-wal
+
+# Сырой метеоархив (не коммитить)
+метеорология/
