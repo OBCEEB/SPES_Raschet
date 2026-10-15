@@ -26,7 +26,8 @@ if str(_SRC) not in sys.path:
 from config_loader import load_config, resolve_path, REPO_ROOT  # noqa: E402
 
 
-VALUE_COLS = ["q_mjm2", "t_deg_c", "q_mj", "ngo_m", "ssd_s"]
+# q_mjm2 is the raw SQLite column (misnomer); radiation_wm2 is the analysis name (W/m²).
+VALUE_COLS = ["q_mjm2", "radiation_wm2", "t_deg_c", "q_mj", "ngo_m", "ssd_s"]
 QC_FLAG_COLS = [
     "qc_missing_row",
     "qc_missing_q",
@@ -89,6 +90,8 @@ def read_observations(sqlite_path: Path) -> pd.DataFrame:
     with sqlite3.connect(str(sqlite_path)) as conn:
         df = pd.read_sql_query(query, conn)
     df["obs_time"] = pd.to_datetime(df["obs_time"], format="%Y-%m-%d %H:%M:%S")
+    # User-confirmed: values are W/m² despite column name q_mjm2.
+    df["radiation_wm2"] = df["q_mjm2"]
     return df
 
 
@@ -120,13 +123,13 @@ def apply_qc(df: pd.DataFrame, cfg: Dict) -> pd.DataFrame:
     # Also treat any absent observation join as missing row when all value cols null
     out["qc_missing_row"] = out[VALUE_COLS].isna().all(axis=1)
 
-    out["qc_missing_q"] = out["q_mjm2"].isna().astype(np.int8)
+    out["qc_missing_q"] = out["radiation_wm2"].isna().astype(np.int8)
     out["qc_missing_ssd"] = out["ssd_s"].isna().astype(np.int8)
     out["qc_missing_ngo"] = out["ngo_m"].isna().astype(np.int8)
     out["qc_missing_t"] = out["t_deg_c"].isna().astype(np.int8)
     out["qc_missing_row"] = out["qc_missing_row"].astype(np.int8)
 
-    out["qc_negative_q"] = ((~out["q_mjm2"].isna()) & (out["q_mjm2"] < 0)).astype(np.int8)
+    out["qc_negative_q"] = ((~out["radiation_wm2"].isna()) & (out["radiation_wm2"] < 0)).astype(np.int8)
 
     # NGO ≥9000 already nulled by importer; still flag any residual censored values.
     out["qc_ngo_censored"] = ((~out["ngo_m"].isna()) & (out["ngo_m"] >= 9000)).astype(np.int8)
@@ -134,16 +137,16 @@ def apply_qc(df: pd.DataFrame, cfg: Dict) -> pd.DataFrame:
     elev = out["obs_time"].map(lambda t: _solar_elevation_deg(t, lat, lon))
     out["solar_elevation_deg"] = elev.astype(float)
     night = elev < min_elev
-    q_pos = (~out["q_mjm2"].isna()) & (out["q_mjm2"] > 0)
+    q_pos = (~out["radiation_wm2"].isna()) & (out["radiation_wm2"] > 0)
     out["qc_night_suspect"] = (night & q_pos).astype(np.int8)
 
     # Flatline suspects: runs of identical non-null Q spanning >= flatline window.
-    q = out["q_mjm2"]
+    q = out["radiation_wm2"]
     same_as_prev = q.notna() & q.eq(q.shift(1))
     # run ids change when value changes or null break
     run_break = (~same_as_prev) | q.isna()
     run_id = run_break.cumsum()
-    run_len = out.groupby(run_id)["q_mjm2"].transform("size")
+    run_len = out.groupby(run_id)["radiation_wm2"].transform("size")
     # Only flag when the constant value is non-null and run is long enough
     out["qc_flatline_q"] = (
         q.notna() & (run_len >= flat_n) & same_as_prev.groupby(run_id).transform("any")
@@ -320,13 +323,13 @@ def write_report(
     lines.append("| Grid period (actual) | {} → {} |".format(tmin, tmax))
     lines.append("| Processed output | {} |".format(parquet_note))
     lines.append("")
-    lines.append("## Units note (open question)")
+    lines.append("## Units note (confirmed)")
     lines.append("")
     lines.append(
-        "Column `q_mjm2` is filled from raw CSV header **`Q, Вт/м2`** (W/m²). "
-        "The SQLite/column name suggests MJ/m². Until reconciled, numeric values are treated as "
-        "**stored irradiance as parsed from W/m²** — do not convert for modeling without confirmation. "
-        "`q_mj` similarly comes from **`Q, мВ`** (millivolts), not megajoules."
+        "Observed irradiance is **W/m²** (user-confirmed). Raw CSV header `Q, Вт/м2`; "
+        "SQLite column `q_mjm2` is a **misnomer** (not MJ/m²). Analysis outputs use "
+        "`radiation_wm2` (= `q_mjm2`). Do not apply an MJ conversion. "
+        "`q_mj` comes from **`Q, мВ`** (millivolts), not megajoules."
     )
     lines.append("")
     lines.append("## Counts")
@@ -352,11 +355,13 @@ def write_report(
     lines.append("")
     lines.append("- `qc_missing_row` — no observation joined for the half-hour slot")
     lines.append("- `qc_missing_*` — named variable is null")
-    lines.append("- `qc_negative_q` — `q_mjm2` < 0")
-    lines.append("- `qc_night_suspect` — `q_mjm2` > 0 while approximate solar elevation "
-                 "< `quality_control.min_solar_elevation_deg` ({}°)".format(
-                     (cfg.get("quality_control") or {}).get("min_solar_elevation_deg", 5)
-                 ))
+    lines.append("- `qc_negative_q` — `radiation_wm2` (`q_mjm2`) < 0")
+    lines.append(
+        "- `qc_night_suspect` — `radiation_wm2` > 0 while approximate solar elevation "
+        "< `quality_control.min_solar_elevation_deg` ({}°)".format(
+            (cfg.get("quality_control") or {}).get("min_solar_elevation_deg", 5)
+        )
+    )
     lines.append("- `qc_ngo_censored` — residual `ngo_m` ≥ 9000 (importer normally nulls these)")
     lines.append("- `qc_flatline_q` — identical non-null Q lasting ≥ {} h".format(
         (cfg.get("quality_control") or {}).get("flatline_window_hours", 6)

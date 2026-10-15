@@ -41,9 +41,8 @@ paths:
   figures_dir: figures
   tables_dir: tables
   reports_dir: reports
-  # Regenerate processed/tables/figures/reports:
+  # Regenerate:
   #   analysis\.venv\Scripts\python.exe analysis\src\run_pipeline.py
-  # See analysis/README.md (export + QC only for now).
 
 period:
   # From current Data/spes_meteo.sqlite probe; re-check after re-import
@@ -51,11 +50,37 @@ period:
   end: "2025-12-31"
   cadence_minutes: 30
 
+# Observed irradiance units (user-confirmed 2026-10-15)
+units:
+  # Raw CSV header Q, Вт/м2; SQLite column name q_mjm2 is a misnomer
+  radiation_raw_column: q_mjm2
+  radiation_analysis_column: radiation_wm2
+  radiation_unit: W/m2
+  radiation_note: >
+    User-confirmed: observed values are W/m². Do not convert from MJ/m².
+    Analysis outputs use radiation_wm2 (= q_mjm2).
+  handbook_irradiance_unit: W_h/m2
+  handbook_unit_note: >
+    Product SolarData comments: Вт·ч/м². UI sometimes labels МДж/м² — analysis
+    follows code comments. Hourly Wh/m² over 1 h ≡ mean W/m² for that hour.
+
 quality_control:
   min_solar_elevation_deg: 5
   allow_cloud_enhancement: true
   flatline_window_hours: 6
   max_missing_fraction: 0.2
+
+clear_sky:
+  model: ineichen_perez_2002
+  # pvlib preferred but not installable here; local implementation of same formulas
+  linke_turbidity: 3.0
+  g_cs_min_wm2: 5.0
+  surface: horizontal
+  elevation_m_fallback: 160
+
+handbook_bref:
+  method: daily_total_x_handbook_sin_altitude
+  # IrradianceData.csv is façade-only; DailyTotalData.csv is horizontal daily energy
 
 model:
   target: clear_sky_index
@@ -69,8 +94,12 @@ model:
   include_cloud_base: true
 
 validation:
-  strategy: leave_one_year_out
-  test_year: null
+  strategy: year_holdout
+  # Only years with usable SQLite radiation
+  train_years: [2023]
+  val_years: [2024]
+  test_years: [2025]
+  test_year: 2025
   block_bootstrap: daily
 
 collector:

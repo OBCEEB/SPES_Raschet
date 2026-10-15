@@ -29,8 +29,8 @@ Provenance: copied from `bin\Debug\net6.0-windows7.0\` (hashes verified; see `da
 | Key columns | `LATITUDE`, `STARTHOUR`, then direction pairs (С/В/Ю/З and diagonals; `пр` / `р`) |
 | Latitude grid | 0…68 °, step 4 |
 | Physical meaning | Handbook / reference insolation table used by product interpolation |
-| Units (code comment) | Вт·ч/м² |
-| Surface / tilt | Directional façade-style columns (product Table 1); exact handbook definition (clear-sky vs climate mean vs design day): **UNKNOWN** |
+| Units (code comment) | Вт·ч/м² (analysis treats hourly Wh/m² over 1 h as mean W/m²) |
+| Surface / tilt | Directional façade-style columns (product Table 1); **not** horizontal GHI; exact handbook definition (clear-sky vs climate mean vs design day): **UNKNOWN** |
 | Temporal meaning of `STARTHOUR` | Local hour index in table; calendar date not present (climatological table) |
 | Missing sentinel | `-1` in parser |
 
@@ -39,8 +39,9 @@ Provenance: copied from `bin\Debug\net6.0-windows7.0\` (hashes verified; see `da
 | Item | Value |
 |------|--------|
 | Columns | `LATITUDE`, `DAILY_TOTAL_HORIZONTAL` |
-| Units (code comment) | Вт·ч/м² per day (horizontal) |
+| Units (code comment) | Вт·ч/м² per day (horizontal). UI label sometimes says МДж/м² — analysis follows code comments. |
 | Period / season represented | **UNKNOWN** (single value per latitude; no month column) |
+| Analysis use | Horizontal `B_ref` diurnal profile = distribute this daily total by handbook sun-altitude weights |
 
 ### A.3 `SunPosition_Altitude.csv` / `SunPosition_Azimuth.csv`
 
@@ -129,11 +130,13 @@ Gitignored. SHA256 at inventory: `CBBD355F405B501A07EF78A11D4D5DB449EDFE76BA5882
 | `station_id` | INTEGER | FK station | — |
 | `dataset_id` | INTEGER | FK dataset | — |
 | `obs_time` | TEXT | Timestamp `yyyy-MM-dd HH:mm:ss` | Local assumed; cadence **30 min** after merge |
-| `q_mjm2` | REAL | Radiation from CSV col `Q, Вт/м2` | **Unit name mismatch**: raw header Вт/м², column name suggests МДж/м² — treat numeric values as stored from W/m² parser until reconciled (**UNKNOWN** which physical energy unit was intended by column name) |
+| `q_mjm2` | REAL | Radiation from CSV col `Q, Вт/м2` | **Misnomer**: values are **W/m²** (user-confirmed). Not MJ/m². Analysis alias: `radiation_wm2`. |
 | `t_deg_c` | REAL | Temperature | °C |
 | `q_mj` | REAL | From CSV `Q, мВ` | Millivolts in source; column name `q_mj` is misleading |
 | `ngo_m` | REAL | Cloud base height | meters; null if missing/censored |
 | `ssd_s` | REAL | Sunshine duration | seconds (from `SSD, c`) |
+
+Analysis rename: processed outputs expose `radiation_wm2` (= `q_mjm2`) in W/m².
 
 Constraints for current DB: importer deletes rows where `q_mjm2` IS NULL OR `ngo_m` IS NULL → all 21 799 rows have both Q and NGO non-null.
 

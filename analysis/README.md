@@ -21,11 +21,11 @@ analysis\.venv\Scripts\python.exe -m pip install --no-index --find-links analysi
 
 ## Config
 
-- `analysis/configs/main.yaml` — sites, paths, period, QC thresholds, model placeholders
+- `analysis/configs/main.yaml` — sites, paths, period, QC, clear-sky, year splits
 - Primary series: `Data/spes_meteo.sqlite` (gitignored; must exist locally)
 - Outputs: `data/processed/`, `tables/`, `figures/`, `reports/`
 
-## Run (export + QC)
+## Run
 
 From repo root:
 
@@ -33,31 +33,38 @@ From repo root:
 analysis\.venv\Scripts\python.exe analysis\src\run_pipeline.py
 ```
 
-Equivalent:
+Stages: `export,qc,models` (default). Models only:
 
 ```bat
-analysis\.venv\Scripts\python.exe analysis\src\export_qc.py
+analysis\.venv\Scripts\python.exe analysis\src\run_models.py
 ```
 
-Or, if dependencies are available for system `py -3`:
+Tests:
 
 ```bat
-py -3 analysis\src\run_pipeline.py
+analysis\.venv\Scripts\python.exe -m unittest discover -s analysis\tests -v
 ```
+
+## Units (confirmed)
+
+Observed irradiance is **W/m²**. SQLite column `q_mjm2` is a misnomer; analysis column `radiation_wm2` (= `q_mjm2`). Do not convert from MJ/m².
+
+Handbook tables: product comments use **Вт·ч/м²**; hourly Wh/m² over 1 h ≡ mean W/m² for comparison.
+
+## Clear-sky / baselines
+
+- Solar position + Ineichen–Perez (2002) horizontal `G_cs` (`analysis/src/solar_geometry.py`). `pvlib` preferred but not required.
+- Handbook `B_ref`: lat interpolation + DailyTotal shaped by handbook sun altitude (`handbook_bref.py`).
+- M0: `G_hat = B_ref`; M1: monthly scale on train year 2023 (`models_m0_m1.py`).
 
 ## Outputs
 
 | Path | Contents |
 |------|----------|
-| `data/processed/merged_halfhourly.parquet` | Full half-hourly grid + values + QC flags (gitignored if large) |
-| `data/processed/qc_flags.parquet` | Flag columns only |
-| `tables/qc_*.csv` | Completeness and flag-count summaries (committed) |
-| `tables/merged_halfhourly_sample.csv` | First 48 rows sample |
-| `figures/qc_*.png` | Completeness heatmap / monthly valid-Q fraction |
-| `reports/qc_report.md` | Human-readable QC summary |
+| `data/processed/merged_halfhourly.parquet` | Half-hourly grid + QC (gitignored) |
+| `data/processed/features_m0m1.parquet` | Features + predictions (gitignored) |
+| `tables/qc_*.csv`, `tables/m0m1_*.csv` | Summaries (committed) |
+| `figures/qc_*.png`, `figures/m0m1_*.png` | Figures |
+| `reports/qc_report.md`, `reports/model_report_m0_m1.md` | Reports |
 
 Rows are **not** dropped for QC failures; flags are columns.
-
-## Units caveat
-
-`q_mjm2` is populated from raw `Q, Вт/м2`. Confirm physical units before modeling.
