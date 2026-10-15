@@ -47,3 +47,8 @@ Data/processed/*.parquet
 Data/processed/*.csv
 !data/processed/.gitkeep
 !Data/processed/.gitkeep
+data/interim/*
+!data/interim/.gitkeep
+analysis/src/_probe_*.py
+analysis/**/__pycache__/
+analysis/tests/__pycache__/
