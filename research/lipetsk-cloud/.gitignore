@@ -5,3 +5,4 @@ data/lipetsk/csv_v1_time_bug/
 .venv/
 data/lipetsk/handbook/
 data/lipetsk/raw/
+manuscript/build/*.html
