@@ -187,7 +187,7 @@ def slot_k_eff(ghi: float, opt: dict) -> tuple[float, float]:
     kt = ghi / opt["i0"]
     bh, dh, it = erbs_it(ghi, kt, opt)
     if it <= 5:
-        return it, col.KD_DIFF
+        return it, col.IAM_DIFFUSE
     return it, col.keff_iam(bh, dh, ghi, opt["rb"], it, opt["cost"])
 
 

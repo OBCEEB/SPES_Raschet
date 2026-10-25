@@ -50,7 +50,8 @@ from lipetsk_gti import (  # noqa: E402
 HREF = ROOT / "data" / "lipetsk" / "csv" / "sp131_href_cs.csv"
 OUT = ROOT / "data" / "lipetsk" / "csv"
 H0_FLOOR = 10.0  # m, log(Hcloud + h0)
-H_CLEAR = 3000.0  # NGO=9999 → нет кромки, потолок кеилиметра
+H_CLEAR = 3000.0  # NGO=9999 → нет измеренной кромки; подстановка, не измерение
+H_CLEAR_SENSITIVITY = (1000.0, 2000.0, 3000.0, 5000.0, 10000.0)
 KT_LO = 0.03
 
 
@@ -73,11 +74,11 @@ def month_slots(year: int, month: int) -> list[datetime]:
     return out
 
 
-def heff(ngo: float | None) -> float | None:
+def heff(ngo: float | None, h_clear: float = H_CLEAR) -> float | None:
     if ngo is None:
         return None
     if ngo >= 9000:
-        return H_CLEAR
+        return h_clear
     return max(ngo, 0.0)
 
 
@@ -187,13 +188,13 @@ def smear_factors(href: dict[int, float]) -> dict[tuple[int, int], dict]:
     return out
 
 
-def design_daily(rows: list[dict]) -> tuple[np.ndarray, list[str]]:
-    names = ["intercept", "log_Kref", "sin_alpha", "s_ssd", "log_Hcloud"] + [f"m{m:02d}" for m in range(1, 12)]
+def design_daily(rows: list[dict], use_s: bool = True, h_key: str = "logH") -> tuple[np.ndarray, list[str]]:
+    names = ["intercept", "log_Kref", "sin_alpha"] + (["s_ssd"] if use_s else []) + ["log_Hcloud"]
+    names += [f"m{m:02d}" for m in range(1, 12)]
     x = []
     for r in rows:
-        x.append(
-            [1.0, math.log(r["Kref"]), r["sina"], r["s"], r["logH"]] + month_dummies(r["month"])
-        )
+        row = [1.0, math.log(r["Kref"]), r["sina"]] + ([r["s"]] if use_s else []) + [r[h_key]]
+        x.append(row + month_dummies(r["month"]))
     return np.array(x), names
 
 
@@ -210,13 +211,15 @@ def design_hour(rows: list[dict], ar: bool) -> tuple[np.ndarray, list[str]]:
     return np.array(x), names
 
 
-def fit_predict_daily(train: list[dict], test: list[dict]) -> tuple[np.ndarray, np.ndarray, dict, float]:
-    xtr, names = design_daily(train)
+def fit_predict_daily(
+    train: list[dict], test: list[dict], use_s: bool = True, h_key: str = "logH"
+) -> tuple[np.ndarray, np.ndarray, dict, float]:
+    xtr, names = design_daily(train, use_s, h_key)
     ytr = np.log(np.array([r["Kt"] for r in train]))
     b = ols(xtr, ytr)
     resid = ytr - xtr @ b
     smear = float(np.mean(np.exp(resid)))
-    xte, _ = design_daily(test)
+    xte, _ = design_daily(test, use_s, h_key)
     yhat_log = xte @ b
     kt_hat = np.clip(np.exp(yhat_log) * smear, 0.0, 1.1)
     kt_obs = np.array([r["Kt"] for r in test])
@@ -280,6 +283,7 @@ def main() -> None:
                 "q": q,
                 "ta": met.get("t"),
                 "ssd": ssd or 0.0,
+                "ssd_ok": ssd is not None,
                 "n_min": met.get("n_min") or 0,
                 "hraw": hraw,
                 "he": heff(hraw),
@@ -327,6 +331,7 @@ def main() -> None:
             "nH": 0,
             "n9999": 0,
             "n_ngo": 0,
+            "hraws": [],
         }
     )
     for s in slots:
@@ -338,12 +343,14 @@ def main() -> None:
             b["H"] += s["q"] * dt_e
         b["H0"] += s["opt"]["i0"] * dt_e
         b["Href"] += s["gref"] * dt_e
-        b["ssd"] += s["ssd"]
-        b["nmin"] += s["n_min"]
+        if s["ssd_ok"]:
+            b["ssd"] += s["ssd"]
+            b["nmin"] += 30
         if s["he"] is not None:
             b["logH"] += math.log(s["he"] + H0_FLOOR)
             b["nH"] += 1
             b["n_ngo"] += 1
+            b["hraws"].append(s["hraw"])
             if s["hraw"] is not None and s["hraw"] >= 9000:
                 b["n9999"] += 1
 
@@ -357,6 +364,10 @@ def main() -> None:
             continue
         dt = datetime.strptime(d, "%Y-%m-%d")
         sbar = b["ssd"] / (b["nmin"] * 60.0)
+        log_h_alt = {
+            f"logH_{int(hc)}": sum(math.log(heff(h, hc) + H0_FLOOR) for h in b["hraws"]) / len(b["hraws"])
+            for hc in H_CLEAR_SENSITIVITY
+        }
         daily.append(
             {
                 "date": d,
@@ -366,6 +377,7 @@ def main() -> None:
                 "Kref": kref,
                 "s": min(max(sbar, 0.0), 1.0),
                 "logH": b["logH"] / b["nH"],
+                **log_h_alt,
                 "sina": max(0.0, sina_noon(dt.timetuple().tm_yday)),
                 "H": b["H"],
                 "H0": b["H0"],
@@ -391,6 +403,24 @@ def main() -> None:
         }
         for r, h in zip(te, hat):
             kt_hat_oos[r["date"]] = float(h)
+
+    def yearwise_variant(use_s: bool, h_key: str) -> dict:
+        out = {}
+        for ty in (2025, 2024, 2023):
+            tr = [r for r in daily if r["year"] != ty]
+            te = [r for r in daily if r["year"] == ty]
+            if len(tr) < 50 or len(te) < 30:
+                continue
+            obs, hat, _, _ = fit_predict_daily(tr, te, use_s, h_key)
+            winter = np.array([r["month"] in (11, 12, 1, 2, 3) for r in te])
+            out[str(ty)] = {"Kt": metrics(obs, hat), "Kt_winter": metrics(obs[winter], hat[winter])}
+        return out
+
+    variants_d = {"with_ssd": {}, "no_ssd": {}}
+    for hc in H_CLEAR_SENSITIVITY:
+        key = f"logH_{int(hc)}"
+        variants_d["with_ssd"][f"h9999_{int(hc)}m"] = yearwise_variant(True, key)
+        variants_d["no_ssd"][f"h9999_{int(hc)}m"] = yearwise_variant(False, key)
 
     xall, names_d = design_daily(daily)
     yall = np.log(np.array([r["Kt"] for r in daily]))
@@ -446,7 +476,7 @@ def main() -> None:
         yearwise_h[str(ty)] = {
             "n_train": len(tr),
             "n_test": len(te),
-            "coef": {n: round(float(v), 4) for n, v in zip(nh, bh)} | {"smear_exp_resid": round(sm, 4)},
+            "coef": {**{n: round(float(v), 4) for n, v in zip(nh, bh)}, "smear_exp_resid": round(sm, 4)},
             "kt": metrics(obs, hat),
             "note": "meteo only, no AR(1); for actualization",
         }
@@ -531,6 +561,7 @@ def main() -> None:
                 "H_mjm2": round(r["H"], 4),
                 "Href_smear_mjm2": round(r["Href"], 4),
                 "Qu_obs_mjm2": round(q.get("obs", 0.0), 4),
+                "Q_from_measured_GHI_mjm2": round(q.get("obs", 0.0), 4),
                 "Qu_ref_mjm2": round(q.get("ref", 0.0), 4),
                 "Qu_adj_mjm2": round(q.get("adj", 0.0), 4),
                 "IT_obs_mjm2": round(q.get("it_obs", 0.0), 4),
@@ -603,10 +634,19 @@ def main() -> None:
             "formula": "log(Kt) = αm + β1 log(Kref_sp) + β2 sinαn + β3 s + β4 log(Hcloud+10)",
             "Hcloud": "NGO=9999 → 3000 m; else metres",
             "Kref": "daily sum of smeared SP Gref / H0",
-            "full_sample_coef": {n: round(float(v), 4) for n, v in zip(names_d, ball)}
-            | {"smear_exp_resid": round(smear_all, 4)},
+            "full_sample_coef": {
+                **{n: round(float(v), 4) for n, v in zip(names_d, ball)},
+                "smear_exp_resid": round(smear_all, 4),
+            },
             "full_sample_Kt": metrics(kt_obs_all, kt_hat_all),
             "yearwise": yearwise_d,
+            "yearwise_variants": {
+                "note": (
+                    "Robustness check, not model selection: NGO=9999 substitute height "
+                    "and with/without the logger SSD feature; same days and folds."
+                ),
+                **variants_d,
+            },
         },
         "hourly_log_kt": {
             "formula": "log(kt) = αm + βref log(kref) + βs sh + βh log(H+10) + βz cosz",
@@ -618,7 +658,7 @@ def main() -> None:
             "dT_K": DT_COLL,
             "Qref": "ISO on smeared SP clear-sky GTI (Hottel beam/diffuse × smear)",
             "Qadj": "ISO on Gadj,h = Gref,h * Kt_hat_oos / Kref_d (Erbs + Liu-Jordan)",
-            "Qobs": "ISO on measured Q (Erbs + Liu-Jordan)",
+            "Qobs": "Q_from_measured_GHI: ISO on measured GHI (Erbs + Liu-Jordan); not measured heat",
             "year_eq_mjm2": {
                 "Qu_obs": round(year_sum("Qu_obs_eq_mjm2"), 1),
                 "Qu_ref": round(year_sum("Qu_ref_eq_mjm2"), 1),

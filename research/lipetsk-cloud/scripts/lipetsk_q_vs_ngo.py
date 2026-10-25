@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Стыковка сырых минуток Q Конь-Колодезя с НГО аэропорта и sqlite.
 
-Берёт :00 и :30 из минуток (если минуты нет — среднее по получасу).
+Получасовой Q — среднее минут [t0, t0+30) при не менее MIN_MINUTES минутах,
+иначе слот пропущен. Метки файлов переводятся в MSK при чтении (lipetsk_time).
 День `yymm00.csv` часто держит **предыдущие** календарные сутки, не пустышку.
 """
 
@@ -9,11 +10,16 @@ from __future__ import annotations
 
 import csv
 import json
+import sys
 from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+from lipetsk_time import asmg_to_msk, pyranometer_to_msk  # noqa: E402
+
+MIN_MINUTES = 24
 Q_DIR = ROOT / "data" / "lipetsk" / "obs" / "q"
 NGO_DIR = ROOT / "data" / "lipetsk" / "obs" / "ngo"
 SQLITE = ROOT / "data" / "lipetsk" / "obs" / "kon_kolodez_halfhourly.csv"
@@ -53,7 +59,7 @@ def load_minutes() -> dict[datetime, float]:
                 continue
             t = parse_ts(row[0])
             if t is not None:
-                by_min[t] = v
+                by_min[pyranometer_to_msk(t)] = v
     return by_min
 
 
@@ -64,7 +70,7 @@ def load_sqlite() -> dict[datetime, float]:
     with SQLITE.open(encoding="utf-8") as f:
         for rec in csv.DictReader(f):
             t = datetime.strptime(rec["obs_time"][:19], "%Y-%m-%d %H:%M:%S")
-            out[t] = float(rec["q_wm2"])
+            out[pyranometer_to_msk(t)] = float(rec["q_wm2"])
     return out
 
 
@@ -76,7 +82,7 @@ def load_ngo(start: datetime, end: datetime) -> tuple[set[datetime], set[datetim
             if len(row) < 30:
                 continue
             try:
-                t = datetime(int(row[3]), int(row[4]), int(row[5]), int(row[6]), int(row[7]))
+                t = asmg_to_msk(datetime(int(row[3]), int(row[4]), int(row[5]), int(row[6]), int(row[7])))
             except Exception:
                 continue
             if t < start or t > end:
@@ -93,14 +99,12 @@ def load_ngo(start: datetime, end: datetime) -> tuple[set[datetime], set[datetim
     return ts, valid, val
 
 
-def slot_q(minutes: dict[datetime, float], t0: datetime) -> float | None:
-    if t0 in minutes:
-        return minutes[t0]
-    # exact :00/:30 missing: mean of minutes that exist in this half-hour (O(30))
+def slot_q(minutes: dict[datetime, float], t0: datetime) -> tuple[float | None, int]:
+    """Mean of the minutes in [t0, t0+30) and their count; None below MIN_MINUTES."""
     vals = [minutes[t0 + timedelta(minutes=i)] for i in range(30) if (t0 + timedelta(minutes=i)) in minutes]
-    if not vals:
-        return None
-    return sum(vals) / len(vals)
+    if len(vals) < MIN_MINUTES:
+        return None, len(vals)
+    return sum(vals) / len(vals), len(vals)
 
 
 def main() -> None:
@@ -127,6 +131,7 @@ def main() -> None:
             "q_on_sentinel": 0,
             "q_on_sentinel_gt20": 0,
             "q_no_ngo_ts": 0,
+            "q_short_slot": 0,
             "sqlite": 0,
             "sqlite_and_raw": 0,
             "raw_not_sqlite": 0,
@@ -138,7 +143,9 @@ def main() -> None:
     while t <= end:
         b = buckets[(t.year, t.month)]
         b["grid"] += 1
-        q = slot_q(minutes, t)
+        q, n_min = slot_q(minutes, t)
+        if 0 < n_min < MIN_MINUTES:
+            b["q_short_slot"] += 1
         has_sql = t in sql
         if t in ngo_ok:
             ngo_cls = "ok"
@@ -160,6 +167,7 @@ def main() -> None:
                 {
                     "obs_time": t.strftime("%Y-%m-%d %H:%M:%S"),
                     "q_wm2": round(q, 2),
+                    "n_min": n_min,
                     "ngo": ngo_cls,
                     "in_sqlite": int(has_sql),
                 }
@@ -183,6 +191,7 @@ def main() -> None:
         "q_on_sentinel",
         "q_on_sentinel_gt20",
         "q_no_ngo_ts",
+        "q_short_slot",
         "sqlite",
         "sqlite_and_raw",
         "raw_not_sqlite",
@@ -223,7 +232,7 @@ def main() -> None:
         }
 
     with (OUT / "hh_q_only.csv").open("w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["obs_time", "q_wm2", "ngo", "in_sqlite"])
+        w = csv.DictWriter(f, fieldnames=["obs_time", "q_wm2", "n_min", "ngo", "in_sqlite"])
         w.writeheader()
         w.writerows(hh_rows)
 
@@ -236,6 +245,9 @@ def main() -> None:
         "hh_q_and_valid_ngo": tot["q_and_ngo_ok"],
         "hh_q_on_sentinel": tot["q_on_sentinel"],
         "hh_q_on_sentinel_Qgt20": tot["q_on_sentinel_gt20"],
+        "hh_dropped_lt_min_minutes": tot["q_short_slot"],
+        "slot_rule": f"mean of minutes in [t0, t0+30), n_min >= {MIN_MINUTES}",
+        "time_basis": "file labels UTC -> MSK (lipetsk_time)",
         "hh_sqlite": tot["sqlite"],
         "hh_sqlite_and_raw": tot["sqlite_and_raw"],
         "hh_raw_not_in_sqlite": tot["raw_not_sqlite"],

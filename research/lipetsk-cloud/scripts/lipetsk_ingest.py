@@ -9,6 +9,9 @@
   2) LIPETSK_SQLITE
   3) CSV с колонками obs_time,q_mjm2  (q_mjm2 = Вт/м², имя врёт)
   4) data/lipetsk/qc/merged_halfhourly_sample.csv — только проверка логики
+
+Метки sqlite и сырого минутного CSV (колонка «Время») — шкала файла логгера,
+переводятся в MSK; CSV с колонкой obs_time считаются уже в MSK.
 """
 
 from __future__ import annotations
@@ -26,6 +29,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 from msu_kd import h0_mj, msu_reindl, sin_alpha_noon  # noqa: E402
+from lipetsk_time import pyranometer_to_msk  # noqa: E402
 
 LAT = 52.135409
 LON = 39.163510
@@ -91,7 +95,7 @@ def load_sqlite(path: Path) -> list[dict]:
     for r in rows:
         out.append(
             {
-                "ts": parse_ts(r["obs_time"]),
+                "ts": pyranometer_to_msk(parse_ts(r["obs_time"])),
                 "q": r["q_mjm2"],
                 "t": r["t_deg_c"],
                 "ngo": r["ngo_m"],
@@ -139,9 +143,12 @@ def load_csv(path: Path) -> list[dict]:
                 return None
             return float(x.replace(",", "."))
 
+        ts = parse_ts(ts_s)
+        if tkey.strip() == "Время":
+            ts = pyranometer_to_msk(ts)
         rows.append(
             {
-                "ts": parse_ts(ts_s),
+                "ts": ts,
                 "q": num(q_s),
                 "t": num(t_s) if t_s else None,
                 "ngo": num(ngo_s) if ngo_s else None,

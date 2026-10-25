@@ -214,7 +214,10 @@ def pred_xgb(tr, te):
 
 
 def pred_oracle(tr, te):
-    """Not a forecast. Upper bound of the Gref-shape disaggregation given true daily Kt."""
+    """Not a forecast. Diagnostic run with the exact daily Kt and the smooth Gref profile.
+
+    Not a strict upper bound: an error in daily Kt can offset a profile error.
+    """
     return np.array([r["Kt"] for r in te])
 
 
@@ -306,6 +309,7 @@ def qadj_days(slots: list[dict], kt_hat: dict[str, float]) -> tuple[dict[str, fl
     stat = {
         "frac_G_le_Gcrit_all": round(n_zero / n_day, 4) if n_day else None,
         "frac_G_le_Gcrit_winter": round(n_win_zero / n_win, 4) if n_win else None,
+        "frac_G_le_Gcrit_meaning": "share of daylight slots with zero useful power (G below slot-specific Gcrit)",
         "n_hh": n_day,
         "n_hh_winter": n_win,
     }
@@ -483,8 +487,11 @@ def main() -> None:
         "winter_Q_sum_obs_mjm2": comparison[0]["Q_winter_sum_obs"],
         "notes": [
             "hurdle is a Kt model, not a collector model",
-            "SSD is the same logger as Q, not an independent Campbell-Stokes",
+            "SSD is a column of the same logger file; its sensing method is not documented",
             "do not transfer to other regions",
+            "Qobs = Q_from_measured_GHI (ISO 9806 on measured GHI), not measured heat",
+            "oracle_obs_Kt is a diagnostic run with exact daily Kt, not a strict upper bound",
+            "the best model is picked on the same test years: repeated exploratory check",
         ],
     }
     (OUT / "winter_models_summary.json").write_text(

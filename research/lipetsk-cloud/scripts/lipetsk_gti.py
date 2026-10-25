@@ -66,14 +66,16 @@ def i0_wm2(dt: datetime) -> tuple[float, float, float]:
     w1 = omega_rad(dt, LON)
     # ω растёт ~15°/ч → 7.5° за 30 мин
     dw = math.radians(7.5)
-    w0, w2 = w1 - dw / 2.0, w1 + dw / 2.0
-    geo = math.cos(phi) * math.cos(decl) * (math.sin(w2) - math.sin(w0)) + (w2 - w0) * math.sin(
-        phi
-    ) * math.sin(decl)
-    i0_j = (12.0 * 3600.0 / math.pi) * GSC * e0 * geo
-    i0 = i0_j / DT_S
-    if i0 < 0:
+    # integrate only while the sun is above the horizon: |ω| ≤ ωs
+    ws = math.acos(min(1.0, max(-1.0, -math.tan(phi) * math.tan(decl))))
+    w0, w2 = max(w1 - dw / 2.0, -ws), min(w1 + dw / 2.0, ws)
+    if w2 <= w0:
         i0 = 0.0
+    else:
+        geo = math.cos(phi) * math.cos(decl) * (math.sin(w2) - math.sin(w0)) + (w2 - w0) * math.sin(
+            phi
+        ) * math.sin(decl)
+        i0 = max((12.0 * 3600.0 / math.pi) * GSC * e0 * geo / DT_S, 0.0)
     cosz = math.sin(phi) * math.sin(decl) + math.cos(phi) * math.cos(decl) * math.cos(w1)
     return i0, max(-1.0, min(1.0, cosz)), w1
 
@@ -222,7 +224,8 @@ def main() -> None:
                 "IT_8_17_mjm2": round(b["IT817"], 4),
                 "I0_mjm2": round(b["I0"], 4),
                 "Gcs_hottel_mjm2": round(b["Gcs"], 4),
-                "Kt": round(b["sum_kt"] / b["n_kt"], 4) if b["n_kt"] else "",
+                "kt_slot_mean": round(b["sum_kt"] / b["n_kt"], 4) if b["n_kt"] else "",
+                "Kt_H_over_H0": round(b["H"] / b["I0"], 4) if b["I0"] > 0 else "",
                 "kcs_mean": round(b["sum_kcs"] / b["n_kcs"], 4) if b["n_kcs"] else "",
                 "IT_over_H": round(b["IT"] / b["H"], 4) if b["H"] else "",
             }

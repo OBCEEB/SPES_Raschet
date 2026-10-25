@@ -4,10 +4,8 @@
 Запуск из research/lipetsk-cloud:
     python audit/math_audit.py
     python audit/timing_impact.py
+    python audit/night_and_days_probe.py
     python -m unittest tests.test_math_audit -v
-
-Тест test_timestamps_match_solar_geometry сейчас ПАДАЕТ намеренно: он фиксирует
-блокирующую ошибку шкалы времени пиранометра (см. reports/math_audit_before_writing.md).
 """
 
 from __future__ import annotations
@@ -16,15 +14,20 @@ import json
 import math
 import sys
 import unittest
+from datetime import datetime, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import lipetsk_collector as col  # noqa: E402
+import lipetsk_gti as gti  # noqa: E402
+import lipetsk_q_vs_ngo as qvn  # noqa: E402
+import lipetsk_time as ltime  # noqa: E402
 
 AUDIT = json.loads((ROOT / "audit" / "math_audit_numbers.json").read_text(encoding="utf-8"))
 TIMING = json.loads((ROOT / "audit" / "timing_impact.json").read_text(encoding="utf-8"))
+NIGHT = json.loads((ROOT / "audit" / "night_and_days_probe.json").read_text(encoding="utf-8"))
 
 
 class Units(unittest.TestCase):
@@ -59,8 +62,7 @@ class Collector(unittest.TestCase):
         self.assertGreater(col.qdot(gcrit + 1.0, 1.0), 0.0)
 
     def test_diffuse_iam_constant(self):
-        # KD_DIFF — угловой модификатор рассеянной (IAM_diffuse), не доля рассеянной
-        self.assertAlmostEqual(col.KD_DIFF, 1.0 - col.B0 * (1.0 / math.cos(math.radians(60.0)) - 1.0), places=12)
+        self.assertAlmostEqual(col.IAM_DIFFUSE, 1.0 - col.B0 * (1.0 / math.cos(math.radians(60.0)) - 1.0), places=12)
 
 
 class Reproduction(unittest.TestCase):
@@ -90,9 +92,45 @@ class Timing(unittest.TestCase):
         shift = TIMING["shift_0h"]["winter"]["median_centroid_shift_min"]
         self.assertLess(abs(shift), 30.0, f"GHI смещён на {shift} мин относительно расчётного полудня")
 
-    def test_three_hour_relabel_removes_the_offset(self):
-        self.assertLess(abs(TIMING["shift_3h"]["winter"]["median_centroid_shift_min"]), 30.0)
-        self.assertLess(TIMING["shift_3h"]["winter"]["share_of_measured_energy_dropped"], 0.01)
+    def test_i0_filter_drops_under_one_percent_of_energy(self):
+        for season in ("winter", "other"):
+            self.assertLess(TIMING["shift_0h"][season]["share_of_measured_energy_dropped"], 0.01)
+
+    def test_extra_three_hour_shift_breaks_alignment(self):
+        """Метки уже в MSK: повторный сдвиг +3 ч должен снова дать ~180 мин."""
+        self.assertGreater(abs(TIMING["shift_3h"]["winter"]["median_centroid_shift_min"]), 150.0)
+
+    def test_no_ghi_when_sun_below_minus_6_deg(self):
+        self.assertEqual(NIGHT["ghi_by_elevation_band_new"]["-90..-6"]["share_q_gt_5"], 0.0)
+
+    def test_file_labels_are_converted_once(self):
+        t = datetime(2024, 6, 15, 9, 0)
+        self.assertEqual(ltime.pyranometer_to_msk(t), t + timedelta(hours=3))
+        self.assertEqual(ltime.asmg_to_msk(t), t + timedelta(hours=3))
+        self.assertEqual(gti.MSK_H, ltime.MSK_H)
+
+
+class SlotRules(unittest.TestCase):
+    def test_half_hour_is_mean_of_minutes(self):
+        t0 = datetime(2024, 6, 15, 12, 0)
+        minutes = {t0 + timedelta(minutes=i): float(i) for i in range(30)}
+        q, n = qvn.slot_q(minutes, t0)
+        self.assertEqual(n, 30)
+        self.assertAlmostEqual(q, 14.5)
+
+    def test_short_slot_is_dropped(self):
+        t0 = datetime(2024, 6, 15, 12, 0)
+        minutes = {t0 + timedelta(minutes=i): 100.0 for i in range(qvn.MIN_MINUTES - 1)}
+        self.assertEqual(qvn.slot_q(minutes, t0), (None, qvn.MIN_MINUTES - 1))
+
+    def test_i0_is_zero_before_sunrise_and_clipped_at_sunrise(self):
+        night = datetime(2024, 12, 15, 2, 0)
+        self.assertEqual(gti.i0_wm2(night)[0], 0.0)
+        day = datetime(2024, 12, 15, 12, 0)
+        self.assertGreater(gti.i0_wm2(day)[0], 100.0)
+        slots = [datetime(2024, 12, 15, 8, 0) + timedelta(minutes=30 * k) for k in range(6)]
+        first = next(t for t in slots if gti.i0_wm2(t)[0] > 0)
+        self.assertLess(gti.i0_wm2(first)[0], gti.i0_wm2(first + timedelta(minutes=30))[0])
 
 
 if __name__ == "__main__":

@@ -1,32 +1,35 @@
 {
   "live_minute_slots": 1445468,
   "range": [
-    "2023-02-28 00:00:00",
+    "2023-02-28 03:00:00",
     "2025-12-31 23:30:00"
   ],
-  "hh_grid": 49824,
-  "hh_with_raw_q": 48206,
-  "hh_q_and_valid_ngo": 21825,
-  "hh_q_on_sentinel": 26361,
-  "hh_q_on_sentinel_Qgt20": 12976,
-  "hh_sqlite": 21799,
-  "hh_sqlite_and_raw": 21799,
-  "hh_raw_not_in_sqlite": 26407,
-  "hh_sqlite_not_in_raw": 0,
-  "frac_q_dropped_because_sentinel": 0.5468,
+  "hh_grid": 49818,
+  "hh_with_raw_q": 48088,
+  "hh_q_and_valid_ngo": 21754,
+  "hh_q_on_sentinel": 26314,
+  "hh_q_on_sentinel_Qgt20": 13006,
+  "hh_dropped_lt_min_minutes": 112,
+  "slot_rule": "mean of minutes in [t0, t0+30), n_min >= 24",
+  "time_basis": "file labels UTC -> MSK (lipetsk_time)",
+  "hh_sqlite": 21794,
+  "hh_sqlite_and_raw": 21747,
+  "hh_raw_not_in_sqlite": 26341,
+  "hh_sqlite_not_in_raw": 47,
+  "frac_q_dropped_because_sentinel": 0.5472,
   "mjjjas": {
-    "q_raw": 21982,
-    "sqlite": 5260,
-    "drop_sentinel": 16713,
-    "frac_drop": 0.7603,
-    "drop_Qgt20": 9220
+    "q_raw": 21955,
+    "sqlite": 5266,
+    "drop_sentinel": 16685,
+    "frac_drop": 0.76,
+    "drop_Qgt20": 9251
   },
   "ndj": {
-    "q_raw": 11645,
-    "sqlite": 9375,
-    "drop_sentinel": 2250,
-    "frac_drop": 0.1932,
-    "drop_Qgt20": 582
+    "q_raw": 11616,
+    "sqlite": 9367,
+    "drop_sentinel": 2254,
+    "frac_drop": 0.194,
+    "drop_Qgt20": 578
   },
   "hh_q_only_csv": "data/lipetsk/csv/hh_q_only.csv",
   "note": "All sqlite Q rows are in the raw minutes. Importer drops Q when NGO>=9000. March 2024 is a real Q outage (~96 half-hours); Sep 2024 is Q-complete but 97.5% sentinel. hh_q_only.csv is the 30-min Q series without the NGO inner join."

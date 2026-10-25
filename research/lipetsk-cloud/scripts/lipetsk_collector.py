@@ -33,6 +33,8 @@ from lipetsk_gti import (  # noqa: E402
     liu_jordan,
     rb_south_lat,
 )
+from lipetsk_q_vs_ngo import MIN_MINUTES  # noqa: E402
+from lipetsk_time import asmg_to_msk, pyranometer_to_msk  # noqa: E402
 
 Q_DIR = ROOT / "data" / "lipetsk" / "obs" / "q"
 NGO_DIR = ROOT / "data" / "lipetsk" / "obs" / "ngo"
@@ -84,7 +86,7 @@ def kb(cost: float) -> float:
     return max(0.0, 1.0 - B0 * (1.0 / cost - 1.0))
 
 
-KD_DIFF = kb(math.cos(math.radians(IAM_DIFF_DEG)))
+IAM_DIFFUSE = kb(math.cos(math.radians(IAM_DIFF_DEG)))
 
 
 def load_complete() -> set[str]:
@@ -106,8 +108,13 @@ def load_hh_q() -> dict[datetime, float]:
 
 
 def load_t_ssd() -> dict[datetime, dict]:
-    """Mean T and SSD seconds sum over each 30-min slot from minute CSVs."""
-    acc: dict = defaultdict(lambda: {"t_sum": 0.0, "t_n": 0, "ssd": 0.0, "n": 0})
+    """Mean T and SSD seconds over each 30-min MSK slot from minute CSVs.
+
+    SSD is scaled to 30 minutes when 24..29 minutes are present; slots with
+    fewer minutes get ssd=None, matching the GHI completeness rule.
+    """
+    acc: dict = defaultdict(lambda: {"t_sum": 0.0, "t_n": 0, "ssd": 0.0, "ssd_n": 0, "n": 0})
+    seen: set = set()
     for p in Q_DIR.glob("**/*.csv"):
         if p.stat().st_size <= 41200:
             continue
@@ -116,8 +123,12 @@ def load_t_ssd() -> dict[datetime, dict]:
             if len(row) < 5 or not row[0][:1].isdigit():
                 continue
             t = parse_ts(row[0])
-            if t is None or t < START or t > END:
+            if t is None or num(row[1]) is None:
                 continue
+            t = pyranometer_to_msk(t)
+            if t < START or t > END or t in seen:
+                continue
+            seen.add(t)
             key = floor30(t)
             acc[key]["n"] += 1
             tv = num(row[2])
@@ -127,11 +138,13 @@ def load_t_ssd() -> dict[datetime, dict]:
             sv = num(row[4])
             if sv is not None:
                 acc[key]["ssd"] += sv
+                acc[key]["ssd_n"] += 1
     out = {}
     for k, a in acc.items():
+        ssd = a["ssd"] * 30.0 / a["ssd_n"] if a["ssd_n"] >= MIN_MINUTES else None
         out[k] = {
             "t": (a["t_sum"] / a["t_n"]) if a["t_n"] else None,
-            "ssd": a["ssd"],
+            "ssd": ssd,
             "n_min": a["n"],
         }
     return out
@@ -145,7 +158,7 @@ def load_ngo() -> dict[datetime, dict]:
             if len(row) < 30:
                 continue
             try:
-                t = datetime(int(row[3]), int(row[4]), int(row[5]), int(row[6]), int(row[7]))
+                t = asmg_to_msk(datetime(int(row[3]), int(row[4]), int(row[5]), int(row[6]), int(row[7])))
             except Exception:
                 continue
             if t < START or t > END:
@@ -202,8 +215,8 @@ def keff_iam(bh: float, dh: float, ghi: float, rb: float, it: float, cost: float
     ir = ghi * RHO * (1.0 - math.cos(BETA)) / 2.0
     kbe = kb(cost)
     if it <= 5:
-        return KD_DIFF
-    return min(max((ibt * kbe + (idt + ir) * KD_DIFF) / it, 0.0), 1.2)
+        return IAM_DIFFUSE
+    return min(max((ibt * kbe + (idt + ir) * IAM_DIFFUSE) / it, 0.0), 1.2)
 
 
 def qdot(g: float, k: float) -> float:
@@ -292,9 +305,10 @@ def main() -> None:
             if ta is not None:
                 b["t_sum"] += ta
                 b["t_n"] += 1
-            b["ssd"] += met.get("ssd") or 0.0
             if opt["i0"] > 20:
-                b["daylight_min"] += met.get("n_min") or 0
+                if met.get("ssd") is not None:
+                    b["ssd"] += met["ssd"]
+                    b["daylight_min"] += 30
                 if ng:
                     b["n_ngo"] += 1
                     if ng.get("clear"):
@@ -504,7 +518,10 @@ def main() -> None:
             "Qcs_mjm2": round(qcs_y, 1),
             "Qcs_kwhm2": round(qcs_y / 3.6, 1),
             "Qu_over_Qcs": round(qu_y / qcs_y, 4) if qcs_y else None,
-            "note": "Qobs/Qcs is the cloud penalty on useful heat at ΔT=40 K. Not an error of SP 13.1.",
+            "note": (
+                "Qu here is Q_from_measured_GHI (ISO 9806 on measured GHI, not measured heat). "
+                "Qu/Qcs is the cloud penalty on useful heat at ΔT=40 K. Not an error of SP 131."
+            ),
         },
     }
     (OUT / "collector_summary.json").write_text(

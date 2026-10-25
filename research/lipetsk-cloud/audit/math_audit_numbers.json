@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-25T22:23:56",
+ "generated": "2026-10-25T23:19:31",
  "A_sp_table": {
   "grid_latitudes_deg": [
    40,
@@ -21,71 +21,71 @@
   "sunrise_sunset_clipping_in_code": false,
   "monthly": {
    "1": {
-    "code_over_analytic": 0.99858,
+    "code_over_analytic": 1.00023,
     "clipped_over_analytic": 1.00023,
-    "code_over_clipped_slots_I0_gt20": 0.99973
+    "code_over_clipped_slots_I0_gt20": 1.0
    },
    "2": {
-    "code_over_analytic": 0.99883,
+    "code_over_analytic": 0.99999,
     "clipped_over_analytic": 0.99999,
-    "code_over_clipped_slots_I0_gt20": 0.99986
+    "code_over_clipped_slots_I0_gt20": 1.0
    },
    "3": {
-    "code_over_analytic": 0.99898,
+    "code_over_analytic": 0.99981,
     "clipped_over_analytic": 0.99981,
-    "code_over_clipped_slots_I0_gt20": 0.99991
+    "code_over_clipped_slots_I0_gt20": 1.0
    },
    "4": {
-    "code_over_analytic": 0.99938,
+    "code_over_analytic": 0.99983,
     "clipped_over_analytic": 0.99983,
-    "code_over_clipped_slots_I0_gt20": 0.99993
+    "code_over_clipped_slots_I0_gt20": 1.0
    },
    "5": {
-    "code_over_analytic": 0.99962,
+    "code_over_analytic": 1.00001,
     "clipped_over_analytic": 1.00001,
-    "code_over_clipped_slots_I0_gt20": 0.99997
+    "code_over_clipped_slots_I0_gt20": 1.0
    },
    "6": {
-    "code_over_analytic": 0.99979,
+    "code_over_analytic": 1.00014,
     "clipped_over_analytic": 1.00014,
     "code_over_clipped_slots_I0_gt20": 1.0
    },
    "7": {
-    "code_over_analytic": 0.99971,
+    "code_over_analytic": 1.00007,
     "clipped_over_analytic": 1.00007,
-    "code_over_clipped_slots_I0_gt20": 0.99998
+    "code_over_clipped_slots_I0_gt20": 1.0
    },
    "8": {
-    "code_over_analytic": 0.99947,
+    "code_over_analytic": 0.99987,
     "clipped_over_analytic": 0.99987,
-    "code_over_clipped_slots_I0_gt20": 0.99995
+    "code_over_clipped_slots_I0_gt20": 1.0
    },
    "9": {
-    "code_over_analytic": 0.99914,
+    "code_over_analytic": 0.99975,
     "clipped_over_analytic": 0.99975,
-    "code_over_clipped_slots_I0_gt20": 0.99993
+    "code_over_clipped_slots_I0_gt20": 1.0
    },
    "10": {
-    "code_over_analytic": 0.99874,
+    "code_over_analytic": 0.99985,
     "clipped_over_analytic": 0.99985,
-    "code_over_clipped_slots_I0_gt20": 0.99986
+    "code_over_clipped_slots_I0_gt20": 1.0
    },
    "11": {
-    "code_over_analytic": 0.99831,
+    "code_over_analytic": 1.00011,
     "clipped_over_analytic": 1.00011,
-    "code_over_clipped_slots_I0_gt20": 0.99985
+    "code_over_clipped_slots_I0_gt20": 1.0
    },
    "12": {
-    "code_over_analytic": 0.99914,
+    "code_over_analytic": 1.0003,
     "clipped_over_analytic": 1.0003,
-    "code_over_clipped_slots_I0_gt20": 0.99984
+    "code_over_clipped_slots_I0_gt20": 1.0
    }
   },
   "worst_month_for_Kt_denominator": {
    "month": "1",
-   "code_over_analytic": 0.99858,
+   "code_over_analytic": 1.00023,
    "clipped_over_analytic": 1.00023,
-   "code_over_clipped_slots_I0_gt20": 0.99973
+   "code_over_clipped_slots_I0_gt20": 1.0
   }
  },
  "C_smear": {
@@ -99,38 +99,38 @@
   ]
  },
  "DE_daily_and_Q": {
-  "n_days": 972,
-  "n_slots": 23280,
+  "n_days": 956,
+  "n_slots": 23054,
   "max_abs_H_diff_vs_daily_actualize_mjm2": 0.0,
   "max_abs_Kt_diff": 5e-05,
   "oracle_daily_energy_max_abs_err_mjm2": 0.0,
   "Q_obs_reproduction_max_abs_diff_mjm2": 0.0,
   "Ta_gate_by_season": {
    "winter": {
-    "n_daylight_slots": 6100,
+    "n_daylight_slots": 6061,
     "slots_without_Ta": 0,
     "share_slots_without_Ta": 0.0,
     "slots_without_Ta_but_positive_Q_if_not_gated": 0,
-    "Q_code_sum_mjm2": 701.53,
-    "Q_without_Ta_gate_sum_mjm2": 701.53,
+    "Q_code_sum_mjm2": 484.1,
+    "Q_without_Ta_gate_sum_mjm2": 484.1,
     "Q_lost_to_Ta_gate_share": 0.0
    },
    "summer": {
-    "n_daylight_slots": 13026,
+    "n_daylight_slots": 12903,
     "slots_without_Ta": 0,
     "share_slots_without_Ta": 0.0,
     "slots_without_Ta_but_positive_Q_if_not_gated": 0,
-    "Q_code_sum_mjm2": 2652.75,
-    "Q_without_Ta_gate_sum_mjm2": 2652.75,
+    "Q_code_sum_mjm2": 3435.71,
+    "Q_without_Ta_gate_sum_mjm2": 3435.71,
     "Q_lost_to_Ta_gate_share": 0.0
    },
    "shoulder": {
-    "n_daylight_slots": 4154,
+    "n_daylight_slots": 4090,
     "slots_without_Ta": 0,
     "share_slots_without_Ta": 0.0,
     "slots_without_Ta_but_positive_Q_if_not_gated": 0,
-    "Q_code_sum_mjm2": 738.3,
-    "Q_without_Ta_gate_sum_mjm2": 738.3,
+    "Q_code_sum_mjm2": 777.2,
+    "Q_without_Ta_gate_sum_mjm2": 777.2,
     "Q_lost_to_Ta_gate_share": 0.0
    }
   }
@@ -138,178 +138,180 @@
  "F_baseline_log": {
   "recomputed": {
    "all": {
-    "n": 972,
-    "rmse": 0.075,
-    "mbe": 0.0085
+    "n": 956,
+    "rmse": 0.0852,
+    "mbe": 0.0095
    },
    "winter": {
-    "n": 350,
-    "rmse": 0.0856,
-    "mbe": -0.0058
+    "n": 345,
+    "rmse": 0.1088,
+    "mbe": -0.0052
    }
   },
   "stored_winter_Kt": {
-   "n": 350,
-   "rmse": 0.0856,
-   "mae": 0.0665,
-   "mbe": -0.0058,
-   "r2": 0.6733
+   "n": 345,
+   "rmse": 0.1088,
+   "mae": 0.0842,
+   "mbe": -0.0052,
+   "r2": 0.6131
   },
   "stored_gcrit": {
-   "frac_G_le_Gcrit_all": 0.5875,
-   "frac_G_le_Gcrit_winter": 0.8772,
-   "n_hh": 23280,
-   "n_hh_winter": 6100
+   "frac_G_le_Gcrit_all": 0.5625,
+   "frac_G_le_Gcrit_winter": 0.8414,
+   "frac_G_le_Gcrit_meaning": "share of daylight slots with zero useful power (G below slot-specific Gcrit)",
+   "n_hh": 23054,
+   "n_hh_winter": 6061
   }
  },
  "F_zero_decomposition": {
   "baseline_log": {
    "winter": {
-    "n_slots": 6100,
-    "share_Q_zero_as_in_code": 0.8772,
-    "share_below_Gcrit_physical": 0.8772,
+    "n_slots": 6061,
+    "share_Q_zero_as_in_code": 0.8414,
+    "share_below_Gcrit_physical": 0.8414,
     "share_zero_only_because_Ta_missing": 0.0
    },
    "other": {
-    "n_slots": 17180,
-    "share_Q_zero_as_in_code": 0.4846,
-    "share_below_Gcrit_physical": 0.4846,
+    "n_slots": 16993,
+    "share_Q_zero_as_in_code": 0.463,
+    "share_below_Gcrit_physical": 0.463,
     "share_zero_only_because_Ta_missing": 0.0
    }
   },
   "oracle_obs_Kt": {
    "winter": {
-    "n_slots": 6100,
-    "share_Q_zero_as_in_code": 0.8715,
-    "share_below_Gcrit_physical": 0.8715,
+    "n_slots": 6061,
+    "share_Q_zero_as_in_code": 0.8119,
+    "share_below_Gcrit_physical": 0.8119,
     "share_zero_only_because_Ta_missing": 0.0
    },
    "other": {
-    "n_slots": 17180,
-    "share_Q_zero_as_in_code": 0.4906,
-    "share_below_Gcrit_physical": 0.4906,
+    "n_slots": 16993,
+    "share_Q_zero_as_in_code": 0.4657,
+    "share_below_Gcrit_physical": 0.4657,
     "share_zero_only_because_Ta_missing": 0.0
    }
   },
   "stored_oracle_gcrit": {
-   "frac_G_le_Gcrit_all": 0.5904,
-   "frac_G_le_Gcrit_winter": 0.8715,
-   "n_hh": 23280,
-   "n_hh_winter": 6100
+   "frac_G_le_Gcrit_all": 0.5567,
+   "frac_G_le_Gcrit_winter": 0.8119,
+   "frac_G_le_Gcrit_meaning": "share of daylight slots with zero useful power (G below slot-specific Gcrit)",
+   "n_hh": 23054,
+   "n_hh_winter": 6061
   }
  },
  "F_gcrit_slot_specific": {
   "Gcrit_K1_Wm2": 210.3,
   "winter": {
-   "n": 6100,
-   "p10": 223.2,
-   "median": 233.2,
+   "n": 6061,
+   "p10": 219.6,
+   "median": 232.4,
    "p90": 233.6
   },
   "summer": {
-   "n": 13026,
-   "p10": 219.6,
-   "median": 233.6,
-   "p90": 239.9
+   "n": 12903,
+   "p10": 216.4,
+   "median": 233.4,
+   "p90": 252.9
   }
  },
  "F_S1_measured_GHI": {
   "winter": {
-   "n_slots": 6100,
-   "share_Q_zero": 0.8113,
-   "Q_sum_mjm2": 701.53
+   "n_slots": 6061,
+   "share_Q_zero": 0.807,
+   "Q_sum_mjm2": 484.1
   },
   "other": {
-   "n_slots": 17180,
-   "share_Q_zero": 0.6116,
-   "Q_sum_mjm2": 3391.05
+   "n_slots": 16993,
+   "share_Q_zero": 0.4903,
+   "Q_sum_mjm2": 4212.92
   }
  },
  "F_S2_oracle_smooth_Q_sum_mjm2": {
-  "winter": 197.79,
-  "other": 3286.9
+  "winter": 392.94,
+  "other": 3992.96
  },
  "F_S4_baseline_log_smooth_Q_sum_mjm2": {
-  "winter": 273.5,
-  "other": 3633.43
+  "winter": 474.17,
+  "other": 4316.06
  },
  "G_ngo_9999_sensitivity": {
   "h_clear_1000": {
    "all": {
-    "n": 972,
-    "rmse": 0.0739,
-    "mbe": 0.0079
+    "n": 956,
+    "rmse": 0.0827,
+    "mbe": 0.0088
    },
    "winter": {
-    "n": 350,
-    "rmse": 0.0831,
-    "mbe": -0.0048
+    "n": 345,
+    "rmse": 0.107,
+    "mbe": -0.0037
    }
   },
   "h_clear_2000": {
    "all": {
-    "n": 972,
-    "rmse": 0.0738,
-    "mbe": 0.0081
+    "n": 956,
+    "rmse": 0.0841,
+    "mbe": 0.0092
    },
    "winter": {
-    "n": 350,
-    "rmse": 0.0846,
-    "mbe": -0.0053
+    "n": 345,
+    "rmse": 0.1082,
+    "mbe": -0.0046
    }
   },
   "reproduces_stored_logH_max_abs_diff": 5e-05,
   "h_clear_3000": {
    "all": {
-    "n": 972,
-    "rmse": 0.075,
-    "mbe": 0.0085
+    "n": 956,
+    "rmse": 0.0852,
+    "mbe": 0.0095
    },
    "winter": {
-    "n": 350,
-    "rmse": 0.0856,
-    "mbe": -0.0058
+    "n": 345,
+    "rmse": 0.1088,
+    "mbe": -0.0052
    }
   },
   "h_clear_5000": {
    "all": {
-    "n": 972,
-    "rmse": 0.0767,
-    "mbe": 0.0091
+    "n": 956,
+    "rmse": 0.0863,
+    "mbe": 0.0099
    },
    "winter": {
-    "n": 350,
-    "rmse": 0.0866,
-    "mbe": -0.0065
+    "n": 345,
+    "rmse": 0.1094,
+    "mbe": -0.006
    }
   },
   "h_clear_10000": {
    "all": {
-    "n": 972,
-    "rmse": 0.0785,
-    "mbe": 0.0097
+    "n": 956,
+    "rmse": 0.0874,
+    "mbe": 0.0102
    },
    "winter": {
-    "n": 350,
-    "rmse": 0.0875,
-    "mbe": -0.0073
+    "n": 345,
+    "rmse": 0.1099,
+    "mbe": -0.0067
    }
   }
  },
  "H_timing": {
-  "n_clear_days": 594,
-  "median_shift_min": -140.9,
+  "n_clear_days": 658,
+  "median_shift_min": -4.0,
   "p25_p75_min": [
-   -152.9,
-   -129.4
+   -14.2,
+   6.1
   ],
   "note": "GHI-weighted vs clear-sky-weighted hour angle; 0 = timestamps are slot starts as coded"
  },
  "I_ssd": {
-  "n_slots": 21056,
-  "corr_sunshine_fraction_vs_kcs": 0.502,
-  "share_sunshine_ge25min_but_kcs_lt0.3": 0.0249,
-  "share_sunshine_0_but_kcs_gt0.9": 0.0214,
+  "n_slots": 20705,
+  "corr_sunshine_fraction_vs_kcs": 0.856,
+  "share_sunshine_ge25min_but_kcs_lt0.3": 0.0,
+  "share_sunshine_0_but_kcs_gt0.9": 0.0031,
   "conclusion": "statistics cannot establish whether SSD is a separate sensor or derived from Q"
  },
  "J_distance_pyranometer_airport_km": 67.2,
@@ -321,9 +323,9 @@
   ],
   "scheme": "leave-one-year-out; test year never in train",
   "days_per_year": {
-   "2023": 297,
-   "2024": 328,
-   "2025": 347
+   "2023": 294,
+   "2024": 324,
+   "2025": 338
   }
  }
 }

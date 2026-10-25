@@ -12,12 +12,15 @@ from __future__ import annotations
 
 import csv
 import json
+import sys
 from calendar import monthrange
 from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+from lipetsk_time import asmg_to_msk, pyranometer_to_msk  # noqa: E402
 NGO_DIR = ROOT / "data" / "lipetsk" / "obs" / "ngo"
 Q_CSV = ROOT / "data" / "lipetsk" / "obs" / "kon_kolodez_halfhourly.csv"
 OUT = ROOT / "data" / "lipetsk" / "csv"
@@ -30,7 +33,8 @@ def load_q() -> set[str]:
     keys = set()
     with Q_CSV.open(encoding="utf-8") as f:
         for rec in csv.DictReader(f):
-            keys.add(rec["obs_time"][:16])  # YYYY-MM-DD HH:MM
+            t = datetime.strptime(rec["obs_time"][:16], "%Y-%m-%d %H:%M")
+            keys.add(pyranometer_to_msk(t).strftime("%Y-%m-%d %H:%M"))
     return keys
 
 
@@ -42,7 +46,7 @@ def load_ngo() -> tuple[set[str], set[str]]:
             if len(row) < 30:
                 continue
             try:
-                t = datetime(int(row[3]), int(row[4]), int(row[5]), int(row[6]), int(row[7]))
+                t = asmg_to_msk(datetime(int(row[3]), int(row[4]), int(row[5]), int(row[6]), int(row[7])))
             except Exception:
                 continue
             if t < START or t > END:

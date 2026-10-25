@@ -1,2 +1,7 @@
 __pycache__/
 *.pyc
+data/lipetsk/obs/
+data/lipetsk/csv_v1_time_bug/
+.venv/
+data/lipetsk/handbook/
+data/lipetsk/raw/
