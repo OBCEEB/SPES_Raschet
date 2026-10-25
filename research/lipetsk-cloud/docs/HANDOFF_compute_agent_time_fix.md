@@ -1,5 +1,7 @@
 # HANDOFF: исправить шкалу времени и пересчитать пайплайн Конь-Колодезя
 
+> Заменён документом `docs/MASTER_single_agent_plan.md` (2026-10-25): там ответы на §11 и единый план. Этот файл оставлен для истории.
+
 Кому: агент вычислений (пайплайн `research/lipetsk-cloud`, исходно ветка `cursor/winter-kt-models-5f71` на Cursor origin, HEAD `80f56dd`).
 От: агент литературы и аудита. Дата: 2026-10-25.
 Где лежит аудит: GitHub `OBCEEB/SPES_Raschet`, ветка `article-literature-and-drafts`, папка `research/lipetsk-cloud/`. Копия этого файла и аудита — в общем хранилище `docs/handoff-time-fix/`.

@@ -1,0 +1,88 @@
+{
+  "files": 1557,
+  "minutes": 1439957,
+  "t_min": "2023-02-28 00:00:00",
+  "t_max": "2026-01-01 23:59:00",
+  "ssd_unique_values_count": 61,
+  "ssd_is_integer": true,
+  "daylight_minutes_q_gt_5": 713539,
+  "share_ssd_pos": 0.5414,
+  "share_ssd_partial_1_59": 0.0642,
+  "q_quantiles_when_ssd_60": [
+    37.0,
+    86.5,
+    427.9
+  ],
+  "q_quantiles_when_ssd_0": [
+    57.3,
+    220.7,
+    288.7
+  ],
+  "share_by_q_bin": {
+    "0-50": {
+      "n": 157019,
+      "share_ssd_pos": 0.053,
+      "share_ssd_60": 0.0406
+    },
+    "50-100": {
+      "n": 97360,
+      "share_ssd_pos": 0.1918,
+      "share_ssd_60": 0.1546
+    },
+    "100-120": {
+      "n": 30390,
+      "share_ssd_pos": 0.2731,
+      "share_ssd_60": 0.2192
+    },
+    "120-150": {
+      "n": 38279,
+      "share_ssd_pos": 0.3462,
+      "share_ssd_60": 0.2712
+    },
+    "150-200": {
+      "n": 53221,
+      "share_ssd_pos": 0.4636,
+      "share_ssd_60": 0.3712
+    },
+    "200-300": {
+      "n": 80804,
+      "share_ssd_pos": 0.7294,
+      "share_ssd_60": 0.6113
+    },
+    "300-500": {
+      "n": 106133,
+      "share_ssd_pos": 0.9781,
+      "share_ssd_60": 0.8849
+    },
+    "500-800": {
+      "n": 109789,
+      "share_ssd_pos": 0.9999,
+      "share_ssd_60": 0.9237
+    },
+    "800-2000": {
+      "n": 40544,
+      "share_ssd_pos": 1.0,
+      "share_ssd_60": 0.9264
+    }
+  },
+  "slots_total": 48253,
+  "slot_minutes_quantiles_p1_p5_p50": [
+    28,
+    29,
+    30
+  ],
+  "share_slots_ge_24_min": 0.9977,
+  "share_slots_eq_30_min": 0.8986,
+  "winter_minutes": 524237,
+  "kt_separability_labels_as_utc": {
+    "ghi": {
+      "best_threshold": 199.7,
+      "accuracy_ssd_gt_30": 0.8623
+    },
+    "kt": {
+      "best_threshold": 0.3504,
+      "accuracy_ssd_gt_30": 0.9271
+    },
+    "n_minutes_elev_gt_3": 682015
+  }
+}
