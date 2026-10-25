@@ -20,7 +20,7 @@
 | §2 правки обзора A (СП по широте×месяцу, периоды, осторожные формулировки, пробел только для корпуса) | сделано | `literature/review_article_A_draft.md` (ред. 3) |
 | §3 правки обзора B (нет измеренной DHI, роль МГУ, кусочно-линейная qu, слотовый Gcrit, ΔT) | сделано | `literature/review_article_B_draft.md` (ред. 2) |
 | §5 математический аудит | ошибка шкалы времени найдена и **исправлена 2026-10-25** (фазы 1–2 выполнены, 20/20 тестов; `reports/time_fix_before_after.md`) | `reports/math_audit_before_writing.md`, `audit/` |
-| §6 черновик статьи A | v2 (фаза 3 выполнена 2026-10-25): результаты по пересчитанным данным, READY_FOR_RESULTS | `manuscript/article_A_*.md`, `reports/article_A_numbers.json` |
+| §6 черновик статьи A | версия 3 (2026-10-25): журнальный формат, READY_FOR_RESULTS | `manuscript/article_A.md`, `manuscript/article_A_refs.md`, PDF `manuscript/build/article_A.pdf` (`python manuscript/build_pdf.py`) |
 | §4 международные источники | **не прочитаны**: 11 из 14 платные (покупать не будем, замена открытыми — §5.1), открыты INT-06, INT-10, INT-14 | `literature/international_sources_status.md` |
 | §7–8 статья B | BLOCKED только по международным источникам (время исправлено; сценарии S1/S2/S4 пересчитаны) | — |
 | §9 отчёт о готовности | сделано: A — READY_FOR_DRAFT, B — BLOCKED | `reports/article_writing_readiness.md` |
@@ -227,7 +227,7 @@ python -m unittest tests.test_math_audit -v
 После приёмки фазы 2:
 
 1. Перезапустить аудит; обновить `reports/math_audit_before_writing.md` (BLOCKED → закрыто, с числами).
-2. В `manuscript/article_A_draft_v1.md`, `article_A_tables.md`, `article_A_figures.md` заменить все `[ТРЕБУЕТСЯ ПЕРЕСЧЁТ: шкала времени]` числами из новых CSV/JSON; источник каждого числа — в комментарии Markdown. Результаты, не зависящие от времени (СП, NASA, МГУ–Рейндл: RMSE Kd на тесте 0,083), сверить, что не изменились.
+2. (Выполнено; с версии 3 рукопись — один файл `manuscript/article_A.md`.) Заменить все `[ТРЕБУЕТСЯ ПЕРЕСЧЁТ: шкала времени]` числами из новых CSV/JSON; источник каждого числа — в комментарии Markdown. Результаты, не зависящие от времени (СП, NASA, МГУ–Рейндл: RMSE Kd на тесте 0,083), сверить, что не изменились.
 3. В «Исходные данные» и «Контроль качества и синхронизация» описать:
    - метки логгера и ASMG в UTC, перевод в MSK при загрузке, проверку по геометрии Солнца и METAR;
    - средние за слот с `n_min ≥ 24`;
