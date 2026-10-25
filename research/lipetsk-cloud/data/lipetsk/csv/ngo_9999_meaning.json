@@ -1,0 +1,21 @@
+{
+  "hypothesis": "NGO=9999 is not a dead sensor; it is 'no measured low cloud base' (SKC/NSC/CAVOK/high cloud / ceilometer limit).",
+  "col29_ge_9000": "always exactly 9999 (26709 slots on station grid)",
+  "col17_often_9999": "visibility >=10 km (METAR 9999), a different field",
+  "col23": "cloud amount (oktas-like). 0 is mostly night = not observed, not SKC.",
+  "daytime_08_16_MSK_Qmean_Wm2": {
+    "NGO_9999_N0": 310,
+    "NGO_9999_N1_5": 394,
+    "NGO_9999_Nge6": 291,
+    "base_lt_200m": 37,
+    "base_200_1499m": 124,
+    "base_ge_1500m": 314
+  },
+  "daytime_frac_Q_gt_400": {
+    "NGO_9999_N1_5": 0.467,
+    "base_lt_200m": 0.007
+  },
+  "metar": "UUOL = WMO 27930 = the same ASMG files already on disk. Another METAR dump does not add a second station.",
+  "kon_kolodez_cloud": "No separate cloud-amount archive. Local proxy is SSD in the radiation CSV. ASMG col23 is airport oktas, unused by the importer.",
+  "importer": "Treating 9999 as null and dropping Q+NGO throws away the clearest hours, which is why summer sqlite is empty."
+}

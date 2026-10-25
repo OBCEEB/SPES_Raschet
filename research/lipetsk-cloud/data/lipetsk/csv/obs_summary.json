@@ -1,0 +1,9 @@
+{
+  "source": "OBCEEB/SPES_Raschet cursor/solar-geometry-m0m1-9b6b tables/m0m1_energy_daily.csv",
+  "site": "Kon-Kolodez 52.135409 N 39.163510 E",
+  "n_days_in_file": 824,
+  "n_physical_kt_for_msu_reindl": 758,
+  "mean_Kd_msu_reindl_physical_days": 0.9694,
+  "measured_zero_days": 14,
+  "warning": "Daily H underestimates cloudy-month energy because half-hour gaps are omitted rather than interpolated. Do not quote monthly C as climatology."
+}

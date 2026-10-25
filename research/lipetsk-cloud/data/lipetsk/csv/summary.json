@@ -1,0 +1,22 @@
+{
+  "site": "Kon-Kolodez",
+  "latitude_deg": 52.135409,
+  "longitude_deg": 39.16351,
+  "nasa_dem_elevation_m": 146.86,
+  "sp131_href_cs_year_mjm2": 6148.561,
+  "sp131_href_cs_year_kwhm2": 1707.934,
+  "nasa_allsky_year_from_months_mjm2": 4279.19,
+  "nasa_allsky_year_ann_kwhm2": 1188.367,
+  "nasa_clrsky_year_ann_kwhm2": 1612.095,
+  "nasa_clrsky_year_from_months_mjm2": 5805.31,
+  "nasa_dhi_year_from_months_mjm2": 1915.736,
+  "C_nasa_over_sp131_year": 0.696,
+  "kcs_nasa_year": 0.7372,
+  "kd_nasa_year": 0.4478,
+  "handbook_DailyTotal_52_Wh_m2": 329.0,
+  "handbook_DailyTotal_interp_Wh_m2": 328.932,
+  "handbook_south_facade_52_beam_Wh_m2": 1912.0,
+  "handbook_south_facade_52_diff_Wh_m2": 1018.0,
+  "handbook_south_facade_52_sum_Wh_m2": 2930.0,
+  "scale_note": "DailyTotal ~329 Wh/m²·сут при наивном чтении как суточный GHI на порядок меньше NASA all-sky и СП 13.1; не считать % улучшения. IrradianceData на 52° — фасад (Ю пр+р = 2930 Wh/m² за табличные часы), не горизонталь."
+}

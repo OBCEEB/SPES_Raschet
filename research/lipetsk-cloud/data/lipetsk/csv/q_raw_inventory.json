@@ -1,0 +1,23 @@
+{
+  "years_on_disk": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "files": 1557,
+  "kinds": {
+    "stub_day00": 48,
+    "calendar": 1461,
+    "stub_overflow": 48
+  },
+  "rows": 2242080,
+  "q_slash": 709334,
+  "q_num": 1532746,
+  "q_other": 0,
+  "q_num_frac": 0.683627,
+  "q_min": 0.0,
+  "q_max": 1316.0,
+  "first_live": "230300 28.02.2023 0:00:00",
+  "note": "Minute CSV. Token '/' is empty. Day 00 and overflow dates are station stubs. 2022 is entirely '/'. Live Q from 2023-02-28 sits in 230300.csv (day-00), not in the empty 230228.csv template. Raw files gitignored."
+}

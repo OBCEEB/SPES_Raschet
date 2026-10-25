@@ -1,0 +1,20 @@
+{
+  "beta_deg": 52.135409,
+  "azimuth": "south",
+  "rho_g": 0.2,
+  "split": "Erbs hourly on 30-min kt",
+  "clear_sky": "Hottel 1976 midlatitude A=0.15 km",
+  "n_complete_days": 979,
+  "H_year_eq_mjm2": 4155.4,
+  "H_year_kwhm2": 1154.3,
+  "IT_year_eq_mjm2": 3879.3,
+  "IT_year_kwhm2": 1077.6,
+  "IT817_year_eq_mjm2": 3323.3,
+  "href_year_mjm2": 6148.6,
+  "Gcs_hottel_year_mjm2": 5239.6,
+  "kcs_year_H_over_Hottel": 0.7931,
+  "C_year": 0.6758,
+  "IT_over_H_year": 0.9336,
+  "IT_over_href_year": 0.6309,
+  "note": "Composite of complete daylight days, not one calendar year. IT is isotropic Liu-Jordan south at latitude tilt. Hours 8-17 MSK as VSN 52-86 south dummy collector."
+}

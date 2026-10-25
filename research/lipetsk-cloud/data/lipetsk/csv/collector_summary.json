@@ -1,0 +1,256 @@
+{
+  "collector": {
+    "type": "typical glazed flat-plate, not a named product",
+    "eta0": 0.78,
+    "a1": 3.5,
+    "a2": 0.015,
+    "b0": 0.1,
+    "dT_K": 40.0,
+    "beta_deg": 52.135409,
+    "orientation": "south"
+  },
+  "n_complete_days_with_T": 979,
+  "n_hh_processed": 46952,
+  "regression": {
+    "formula": "Kt = b0 + b1 Kref + b2 s + b3 f_NGO9999 + b4 N̄ + b5 sinα + month",
+    "Kref": "Hcs_Hottel / H0 (no observed Q)",
+    "s": "SSD seconds / (daylight minutes × 60)",
+    "f_NGO9999": "fraction of daylight slots with NGO=9999",
+    "full_sample_coef_with_month": {
+      "intercept": -0.29,
+      "Kref": 1.3304,
+      "s_ssd": 0.5218,
+      "f_ngo9999": 0.0308,
+      "N_mean": -0.0025,
+      "sin_alpha": -0.4621,
+      "m01": -0.0116,
+      "m02": 0.0221,
+      "m03": -0.0623,
+      "m04": -0.0326,
+      "m05": 0.0007,
+      "m06": -0.0071,
+      "m07": -0.0131,
+      "m08": -0.0277,
+      "m09": -0.0388,
+      "m10": -0.0559,
+      "m11": -0.0397
+    },
+    "full_sample_coef_no_month": {
+      "intercept": 0.0759,
+      "Kref": 0.3218,
+      "s_ssd": 0.5263,
+      "f_ngo9999": 0.0296,
+      "N_mean": -0.0015,
+      "sin_alpha": -0.1462
+    },
+    "full_sample": {
+      "n": 979,
+      "rmse": 0.0631,
+      "mae": 0.0485,
+      "mbe": 0.0,
+      "r2": 0.9059
+    },
+    "full_sample_no_month": {
+      "n": 979,
+      "rmse": 0.0655,
+      "mae": 0.0501,
+      "mbe": 0.0,
+      "r2": 0.8984
+    },
+    "nested_baselines": {
+      "mean": {
+        "coef": {
+          "intercept": 0.434
+        },
+        "n": 979,
+        "rmse": 0.2055,
+        "mae": 0.1797,
+        "mbe": 0.0,
+        "r2": 0.0
+      },
+      "s_only": {
+        "coef": {
+          "intercept": 0.1772,
+          "s_ssd": 0.5404
+        },
+        "n": 979,
+        "rmse": 0.0666,
+        "mae": 0.0511,
+        "mbe": 0.0,
+        "r2": 0.8951
+      },
+      "Kref_only": {
+        "coef": {
+          "intercept": -0.549,
+          "Kref": 1.6939
+        },
+        "n": 979,
+        "rmse": 0.1685,
+        "mae": 0.1385,
+        "mbe": 0.0,
+        "r2": 0.3282
+      },
+      "s_Kref_sina": {
+        "coef": {
+          "intercept": 0.0604,
+          "s_ssd": 0.5559,
+          "Kref": 0.341,
+          "sin_alpha_noon": -0.1464
+        },
+        "n": 979,
+        "rmse": 0.0659,
+        "mae": 0.0504,
+        "mbe": 0.0,
+        "r2": 0.8971
+      },
+      "s_Kref_airport": {
+        "coef": {
+          "intercept": 0.0759,
+          "s_ssd": 0.5263,
+          "Kref": 0.3218,
+          "f_ngo9999": 0.0296,
+          "N_mean": -0.0015,
+          "sin_alpha_noon": -0.1462
+        },
+        "n": 979,
+        "rmse": 0.0655,
+        "mae": 0.0501,
+        "mbe": 0.0,
+        "r2": 0.8984
+      }
+    },
+    "yearwise": {
+      "2025": {
+        "train_years": [
+          2023,
+          2024
+        ],
+        "n_train": 625,
+        "n_test": 354,
+        "coef": {
+          "intercept": -0.2054,
+          "Kref": 1.0871,
+          "s_ssd": 0.521,
+          "f_ngo9999": 0.0303,
+          "N_mean": -0.0013,
+          "sin_alpha": -0.3803,
+          "m01": 0.0249,
+          "m02": 0.0231,
+          "m03": -0.0647,
+          "m04": -0.0362,
+          "m05": 0.001,
+          "m06": -0.0058,
+          "m07": -0.0258,
+          "m08": -0.0222,
+          "m09": -0.034,
+          "m10": -0.053,
+          "m11": -0.0348
+        },
+        "test": {
+          "n": 354,
+          "rmse": 0.0684,
+          "mae": 0.0524,
+          "mbe": -0.0024,
+          "r2": 0.8927
+        },
+        "baseline_mean_Kt": {
+          "n": 354,
+          "rmse": 0.2106,
+          "mae": 0.1816,
+          "mbe": 0.0261,
+          "r2": -0.0156
+        }
+      },
+      "2024": {
+        "train_years": [
+          2023,
+          2025
+        ],
+        "n_train": 651,
+        "n_test": 328,
+        "coef": {
+          "intercept": -0.1542,
+          "Kref": 1.0757,
+          "s_ssd": 0.5307,
+          "f_ngo9999": 0.0395,
+          "N_mean": -0.0022,
+          "sin_alpha": -0.469,
+          "m01": -0.0818,
+          "m02": 0.0207,
+          "m03": -0.0495,
+          "m04": -0.0097,
+          "m05": 0.0157,
+          "m06": 0.0177,
+          "m07": 0.02,
+          "m08": -0.0028,
+          "m09": -0.0276,
+          "m10": -0.0572,
+          "m11": -0.0471
+        },
+        "test": {
+          "n": 328,
+          "rmse": 0.0725,
+          "mae": 0.0553,
+          "mbe": 0.0059,
+          "r2": 0.8744
+        },
+        "baseline_mean_Kt": {
+          "n": 328,
+          "rmse": 0.2067,
+          "mae": 0.1827,
+          "mbe": -0.03,
+          "r2": -0.0215
+        }
+      },
+      "2023": {
+        "train_years": [
+          2024,
+          2025
+        ],
+        "n_train": 682,
+        "n_test": 297,
+        "coef": {
+          "intercept": -0.4536,
+          "Kref": 1.7021,
+          "s_ssd": 0.5052,
+          "f_ngo9999": 0.0276,
+          "N_mean": -0.0045,
+          "sin_alpha": -0.5143,
+          "m01": 0.0078,
+          "m02": 0.0266,
+          "m03": -0.064,
+          "m04": -0.042,
+          "m05": -0.0059,
+          "m06": -0.0233,
+          "m07": -0.0234,
+          "m08": -0.0488,
+          "m09": -0.0437,
+          "m10": -0.0498,
+          "m11": -0.0349
+        },
+        "test": {
+          "n": 297,
+          "rmse": 0.0647,
+          "mae": 0.0501,
+          "mbe": -0.0033,
+          "r2": 0.8959
+        },
+        "baseline_mean_Kt": {
+          "n": 297,
+          "rmse": 0.2006,
+          "mae": 0.1765,
+          "mbe": 0.0031,
+          "r2": -0.0002
+        }
+      }
+    }
+  },
+  "iso9806_composite_year": {
+    "Qu_mjm2": 1499.7,
+    "Qu_kwhm2": 416.6,
+    "Qcs_mjm2": 2908.3,
+    "Qcs_kwhm2": 807.9,
+    "Qu_over_Qcs": 0.5157,
+    "note": "Qobs/Qcs is the cloud penalty on useful heat at ΔT=40 K. Not an error of SP 13.1."
+  }
+}

@@ -1,0 +1,330 @@
+{
+  "sqlite": "not used",
+  "n_hh_station": 49824,
+  "n_complete_days_in_log_model": 972,
+  "n_hh_iso": 23504,
+  "smear": {
+    "rule": "Gref,h = Gcs,Hottel,h * Href,cs(m) / Σ_month Gcs,Hottel Δt",
+    "mean_smear_by_month": {
+      "1": 1.3097,
+      "2": 1.2967,
+      "3": 1.2375,
+      "4": 1.1759,
+      "5": 1.1344,
+      "6": 1.1219,
+      "7": 1.1157,
+      "8": 1.115,
+      "9": 1.2061,
+      "10": 1.308,
+      "11": 1.339,
+      "12": 1.307
+    }
+  },
+  "daily_log_Kt": {
+    "formula": "log(Kt) = αm + β1 log(Kref_sp) + β2 sinαn + β3 s + β4 log(Hcloud+10)",
+    "Hcloud": "NGO=9999 → 3000 m; else metres",
+    "Kref": "daily sum of smeared SP Gref / H0",
+    "full_sample_coef": {
+      "intercept": -2.6746,
+      "log_Kref": 1.2671,
+      "sin_alpha": -0.6512,
+      "s_ssd": 1.5217,
+      "log_Hcloud": 0.2347,
+      "m01": 0.0244,
+      "m02": 0.2584,
+      "m03": 0.0057,
+      "m04": 0.0957,
+      "m05": 0.186,
+      "m06": 0.1849,
+      "m07": 0.1492,
+      "m08": 0.1808,
+      "m09": 0.0662,
+      "m10": -0.0539,
+      "m11": -0.1757,
+      "smear_exp_resid": 1.0346
+    },
+    "full_sample_Kt": {
+      "n": 972,
+      "rmse": 0.0685,
+      "mae": 0.0524,
+      "mbe": 0.0091,
+      "r2": 0.8791
+    },
+    "yearwise": {
+      "2025": {
+        "n_train": 625,
+        "n_test": 347,
+        "coef": {
+          "intercept": -3.3652,
+          "log_Kref": 0.2563,
+          "sin_alpha": 0.0146,
+          "s_ssd": 1.5227,
+          "log_Hcloud": 0.2344,
+          "m01": 0.2663,
+          "m02": 0.2939,
+          "m03": -0.0177,
+          "m04": -0.0312,
+          "m05": -0.0099,
+          "m06": -0.0263,
+          "m07": -0.0744,
+          "m08": -0.0031,
+          "m09": -0.0087,
+          "m10": -0.0131,
+          "m11": -0.0937,
+          "smear_exp_resid": 1.0309
+        },
+        "Kt": {
+          "n": 347,
+          "rmse": 0.0735,
+          "mae": 0.0544,
+          "mbe": 0.0021,
+          "r2": 0.8637
+        },
+        "baseline_mean": {
+          "n": 347,
+          "rmse": 0.2013,
+          "mae": 0.1745,
+          "mbe": 0.0292,
+          "r2": -0.0214
+        }
+      },
+      "2024": {
+        "n_train": 644,
+        "n_test": 328,
+        "coef": {
+          "intercept": -1.0944,
+          "log_Kref": 3.2407,
+          "sin_alpha": -2.173,
+          "s_ssd": 1.6259,
+          "log_Hcloud": 0.2287,
+          "m01": -0.4713,
+          "m02": -0.0171,
+          "m03": -0.0938,
+          "m04": 0.2308,
+          "m05": 0.4652,
+          "m06": 0.5452,
+          "m07": 0.511,
+          "m08": 0.4859,
+          "m09": 0.1194,
+          "m10": -0.2751,
+          "m11": -0.3643,
+          "smear_exp_resid": 1.0315
+        },
+        "Kt": {
+          "n": 328,
+          "rmse": 0.0838,
+          "mae": 0.0671,
+          "mbe": 0.0188,
+          "r2": 0.8173
+        },
+        "baseline_mean": {
+          "n": 328,
+          "rmse": 0.1977,
+          "mae": 0.1753,
+          "mbe": -0.0249,
+          "r2": -0.0162
+        }
+      },
+      "2023": {
+        "n_train": 675,
+        "n_test": 297,
+        "coef": {
+          "intercept": -2.4328,
+          "log_Kref": 1.849,
+          "sin_alpha": -0.7165,
+          "s_ssd": 1.4248,
+          "log_Hcloud": 0.2277,
+          "m01": 0.1353,
+          "m02": 0.3341,
+          "m03": 0.0833,
+          "m04": 0.2054,
+          "m05": 0.3219,
+          "m06": 0.2987,
+          "m07": 0.283,
+          "m08": 0.2891,
+          "m09": 0.1597,
+          "m10": 0.0223,
+          "m11": -0.1633,
+          "smear_exp_resid": 1.0353
+        },
+        "Kt": {
+          "n": 297,
+          "rmse": 0.0657,
+          "mae": 0.0523,
+          "mbe": 0.0047,
+          "r2": 0.8847
+        },
+        "baseline_mean": {
+          "n": 297,
+          "rmse": 0.1936,
+          "mae": 0.1727,
+          "mbe": -0.0053,
+          "r2": -0.0007
+        }
+      }
+    }
+  },
+  "hourly_log_kt": {
+    "formula": "log(kt) = αm + βref log(kref) + βs sh + βh log(H+10) + βz cosz",
+    "yearwise_meteo": {
+      "2025": {
+        "n_train": 11354,
+        "n_test": 6013,
+        "coef": {
+          "intercept": -5.0254,
+          "log_kref": -5.5032,
+          "s_h": 1.8051,
+          "log_Hcloud": -0.0626,
+          "cosz": 2.531,
+          "m01": 0.4565,
+          "m02": 0.5848,
+          "m03": 0.4727,
+          "m04": 0.0281,
+          "m05": -0.2194,
+          "m06": -0.3006,
+          "m07": -0.3961,
+          "m08": -0.3424,
+          "m09": 0.0897,
+          "m10": 0.6316,
+          "m11": 0.3961,
+          "smear_exp_resid": 1.2651
+        },
+        "kt": {
+          "n": 6013,
+          "rmse": 0.2509,
+          "mae": 0.1828,
+          "mbe": -0.0161,
+          "r2": 0.622
+        },
+        "note": "meteo only, no AR(1); for actualization"
+      },
+      "2024": {
+        "n_train": 11589,
+        "n_test": 5778,
+        "coef": {
+          "intercept": -5.1918,
+          "log_kref": -5.8212,
+          "s_h": 1.7646,
+          "log_Hcloud": -0.0542,
+          "cosz": 2.7255,
+          "m01": -0.1814,
+          "m02": 0.7604,
+          "m03": 0.4365,
+          "m04": -0.0578,
+          "m05": -0.299,
+          "m06": -0.3799,
+          "m07": -0.5148,
+          "m08": -0.4147,
+          "m09": 0.0307,
+          "m10": 0.5483,
+          "m11": 0.2783,
+          "smear_exp_resid": 1.2695
+        },
+        "kt": {
+          "n": 5778,
+          "rmse": 0.2637,
+          "mae": 0.1937,
+          "mbe": -0.0114,
+          "r2": 0.5965
+        },
+        "note": "meteo only, no AR(1); for actualization"
+      },
+      "2023": {
+        "n_train": 11791,
+        "n_test": 5576,
+        "coef": {
+          "intercept": -5.1809,
+          "log_kref": -5.6544,
+          "s_h": 1.7607,
+          "log_Hcloud": -0.0742,
+          "cosz": 2.6758,
+          "m01": 0.3603,
+          "m02": 0.8409,
+          "m03": 0.643,
+          "m04": 0.1644,
+          "m05": -0.0527,
+          "m06": -0.1764,
+          "m07": -0.2691,
+          "m08": -0.1652,
+          "m09": 0.2813,
+          "m10": 0.8397,
+          "m11": 0.488,
+          "smear_exp_resid": 1.2778
+        },
+        "kt": {
+          "n": 5576,
+          "rmse": 0.2498,
+          "mae": 0.1844,
+          "mbe": -0.0036,
+          "r2": 0.6233
+        },
+        "note": "meteo only, no AR(1); for actualization"
+      }
+    },
+    "yearwise_AR1_obs_lag": {
+      "2025": {
+        "n_test": 5820,
+        "coef_rho_log_kt_lag": 0.7873,
+        "kt_one_step_obs_lag": {
+          "n": 5820,
+          "rmse": 0.1811,
+          "mae": 0.1141,
+          "mbe": -0.0004,
+          "r2": 0.793
+        },
+        "note": "AR(1) with observed lag = nowcast, not Qadj"
+      },
+      "2024": {
+        "n_test": 5603,
+        "coef_rho_log_kt_lag": 0.7727,
+        "kt_one_step_obs_lag": {
+          "n": 5603,
+          "rmse": 0.1825,
+          "mae": 0.1151,
+          "mbe": 0.0026,
+          "r2": 0.7999
+        },
+        "note": "AR(1) with observed lag = nowcast, not Qadj"
+      },
+      "2023": {
+        "n_test": 5412,
+        "coef_rho_log_kt_lag": 0.7972,
+        "kt_one_step_obs_lag": {
+          "n": 5412,
+          "rmse": 0.1859,
+          "mae": 0.1189,
+          "mbe": -0.0016,
+          "r2": 0.7827
+        },
+        "note": "AR(1) with observed lag = nowcast, not Qadj"
+      }
+    }
+  },
+  "iso9806": {
+    "collector": "typical glazed flat-plate, same as lipetsk_collector.py",
+    "dT_K": 40.0,
+    "Qref": "ISO on smeared SP clear-sky GTI (Hottel beam/diffuse × smear)",
+    "Qadj": "ISO on Gadj,h = Gref,h * Kt_hat_oos / Kref_d (Erbs + Liu-Jordan)",
+    "Qobs": "ISO on measured Q (Erbs + Liu-Jordan)",
+    "year_eq_mjm2": {
+      "Qu_obs": 1498.1,
+      "Qu_ref": 3835.7,
+      "Qu_adj": 1388.6
+    },
+    "year_kwhm2": {
+      "Qu_obs": 416.1,
+      "Qu_ref": 1065.5,
+      "Qu_adj": 385.7
+    },
+    "Qu_obs_over_ref": 0.3906,
+    "Qu_adj_over_ref": 0.362,
+    "Qu_adj_over_obs": 0.9269
+  },
+  "reindl2_vs_erbs_IT_complete_days_mjm2": {
+    "IT_erbs_sum_of_daily": 10617.9,
+    "IT_reindl2_sum_of_daily": 10457.2,
+    "reindl2_over_erbs": 0.9849,
+    "note": "same observed GHI; Q chain stays on Erbs"
+  },
+  "n_complete_slots_without_oos_Kt_hat": 224
+}

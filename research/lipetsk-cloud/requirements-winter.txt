@@ -1,0 +1,6 @@
+# Только скрипт compare_winter_models.py (эксперимент зимних Kt).
+# Остальной пайплайн — стандартный Python 3 + numpy + matplotlib.
+scikit-learn>=1.3
+xgboost>=2.0
+matplotlib>=3.8
+numpy>=1.26

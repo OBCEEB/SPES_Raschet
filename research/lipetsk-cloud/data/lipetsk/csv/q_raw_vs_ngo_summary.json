@@ -1,0 +1,33 @@
+{
+  "live_minute_slots": 1445468,
+  "range": [
+    "2023-02-28 00:00:00",
+    "2025-12-31 23:30:00"
+  ],
+  "hh_grid": 49824,
+  "hh_with_raw_q": 48206,
+  "hh_q_and_valid_ngo": 21825,
+  "hh_q_on_sentinel": 26361,
+  "hh_q_on_sentinel_Qgt20": 12976,
+  "hh_sqlite": 21799,
+  "hh_sqlite_and_raw": 21799,
+  "hh_raw_not_in_sqlite": 26407,
+  "hh_sqlite_not_in_raw": 0,
+  "frac_q_dropped_because_sentinel": 0.5468,
+  "mjjjas": {
+    "q_raw": 21982,
+    "sqlite": 5260,
+    "drop_sentinel": 16713,
+    "frac_drop": 0.7603,
+    "drop_Qgt20": 9220
+  },
+  "ndj": {
+    "q_raw": 11645,
+    "sqlite": 9375,
+    "drop_sentinel": 2250,
+    "frac_drop": 0.1932,
+    "drop_Qgt20": 582
+  },
+  "hh_q_only_csv": "data/lipetsk/csv/hh_q_only.csv",
+  "note": "All sqlite Q rows are in the raw minutes. Importer drops Q when NGO>=9000. March 2024 is a real Q outage (~96 half-hours); Sep 2024 is Q-complete but 97.5% sentinel. hh_q_only.csv is the 30-min Q series without the NGO inner join."
+}
