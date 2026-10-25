@@ -1,0 +1,36 @@
+﻿python.exe : test_diffuse_iam_constant (tests.test_math_audit.Collector) ... ok
+C:\Users\Khajiit\AppData\Local\Temp\ps-script-53c54278-4c7b-4135-bda5-8c999d8f7665.ps1:110 знак:128
++ ... | Out-Null; & 'D:\dev\SPES_Raschet\analysis\.venv\Scripts\python.exe' ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (test_diffuse_ia...llector) ... ok:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+test_gcrit_at_unit_iam (tests.test_math_audit.Collector) ... ok
+test_quadratic_loss_dimension (tests.test_math_audit.Collector) ... ok
+test_baseline_log_model_reproduces_stored_winter_metrics (tests.test_math_audit.Reproduction) ... ok
+test_daily_energy_and_q_reproduce_from_hh_station (tests.test_math_audit.Reproduction) ... ok
+test_oracle_daily_energy_equals_measured_on_same_slots (tests.test_math_audit.Reproduction) ... ok
+test_ta_gate_does_not_zero_complete_day_slots (tests.test_math_audit.Reproduction) ... ok
+test_yearwise_split_has_three_disjoint_test_years (tests.test_math_audit.Reproduction) ... ok
+test_three_hour_relabel_removes_the_offset (tests.test_math_audit.Timing) ... ok
+test_timestamps_match_solar_geometry (tests.test_math_audit.Timing)
+Центр суточного хода GHI должен совпадать с ясным небом в пределах 30 мин. ... FAIL
+test_half_hour_integration_half_width_is_pi_over_48 (tests.test_math_audit.Units) ... ok
+test_missing_sunrise_clipping_is_negligible_for_kt (tests.test_math_audit.Units) ... ok
+test_smear_preserves_monthly_reference_sum (tests.test_math_audit.Units) ... ok
+test_sp_table_is_latitude_month_interpolation (tests.test_math_audit.Units) ... ok
+
+======================================================================
+FAIL: test_timestamps_match_solar_geometry (tests.test_math_audit.Timing)
+Центр суточного хода GHI должен совпадать с ясным небом в пределах 30 мин.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\dev\SPES_Raschet-winter\research\lipetsk-cloud\tests\test_math_audit.py", line 91, in test_timestamps_match_
+solar_geometry
+    self.assertLess(abs(shift), 30.0, f"GHI смещён на {shift} мин относительно расчётного полудня")
+AssertionError: 164.7 not less than 30.0 : GHI смещён на -164.7 мин относительно расчётного полудня
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.001s
+
+FAILED (failures=1)

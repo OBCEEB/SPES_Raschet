@@ -1,0 +1,132 @@
+{
+ "control_shift_0h": {
+  "n_days": 972,
+  "Kt_all": {
+   "n": 972,
+   "mean_Kt": 0.3826,
+   "rmse": 0.0885,
+   "mbe": 0.0085
+  },
+  "Kt_winter": {
+   "n": 350,
+   "mean_Kt": 0.2286,
+   "rmse": 0.0865,
+   "mbe": -0.0061
+  },
+  "Q": {
+   "S1_measured": {
+    "winter": {
+     "Q_sum_mjm2": 701.5,
+     "share_slots_Q_zero": 0.8113,
+     "n_slots": 6100
+    },
+    "other": {
+     "Q_sum_mjm2": 3391.1,
+     "share_slots_Q_zero": 0.6116,
+     "n_slots": 17180
+    }
+   },
+   "S2_oracle_smooth": {
+    "winter": {
+     "Q_sum_mjm2": 197.8,
+     "share_slots_Q_zero": 0.8715,
+     "n_slots": 6100
+    },
+    "other": {
+     "Q_sum_mjm2": 3286.9,
+     "share_slots_Q_zero": 0.4906,
+     "n_slots": 17180
+    },
+    "winter_vs_S1": {
+     "Q_ratio": 0.2819,
+     "rmse_daily_Q_mjm2": 2.1118,
+     "mbe_daily_Q_mjm2": -1.4392
+    }
+   },
+   "S4_baseline_smooth": {
+    "winter": {
+     "Q_sum_mjm2": 256.0,
+     "share_slots_Q_zero": 0.8816,
+     "n_slots": 6100
+    },
+    "other": {
+     "Q_sum_mjm2": 3576.0,
+     "share_slots_Q_zero": 0.4831,
+     "n_slots": 17180
+    },
+    "winter_vs_S1": {
+     "Q_ratio": 0.365,
+     "rmse_daily_Q_mjm2": 2.4058,
+     "mbe_daily_Q_mjm2": -1.2728
+    }
+   }
+  }
+ },
+ "corrected_shift_3h": {
+  "n_days": 972,
+  "Kt_all": {
+   "n": 972,
+   "mean_Kt": 0.4324,
+   "rmse": 0.0927,
+   "mbe": 0.0096
+  },
+  "Kt_winter": {
+   "n": 350,
+   "mean_Kt": 0.2895,
+   "rmse": 0.11,
+   "mbe": -0.0057
+  },
+  "Q": {
+   "S1_measured": {
+    "winter": {
+     "Q_sum_mjm2": 555.5,
+     "share_slots_Q_zero": 0.8026,
+     "n_slots": 6100
+    },
+    "other": {
+     "Q_sum_mjm2": 4412.9,
+     "share_slots_Q_zero": 0.5156,
+     "n_slots": 17164
+    }
+   },
+   "S2_oracle_smooth": {
+    "winter": {
+     "Q_sum_mjm2": 415.7,
+     "share_slots_Q_zero": 0.8066,
+     "n_slots": 6100
+    },
+    "other": {
+     "Q_sum_mjm2": 4049.2,
+     "share_slots_Q_zero": 0.4632,
+     "n_slots": 17164
+    },
+    "winter_vs_S1": {
+     "Q_ratio": 0.7484,
+     "rmse_daily_Q_mjm2": 0.7878,
+     "mbe_daily_Q_mjm2": -0.3993
+    }
+   },
+   "S4_baseline_smooth": {
+    "winter": {
+     "Q_sum_mjm2": 486.1,
+     "share_slots_Q_zero": 0.8331,
+     "n_slots": 6100
+    },
+    "other": {
+     "Q_sum_mjm2": 4371.9,
+     "share_slots_Q_zero": 0.4578,
+     "n_slots": 17164
+    },
+    "winter_vs_S1": {
+     "Q_ratio": 0.8752,
+     "rmse_daily_Q_mjm2": 2.2665,
+     "mbe_daily_Q_mjm2": -0.1981
+    }
+   }
+  }
+ },
+ "stored_winter_Kt_baseline": {
+  "rmse": 0.0856,
+  "mbe": -0.0058
+ }
+}

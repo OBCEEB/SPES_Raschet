@@ -1,0 +1,114 @@
+[
+ {
+  "id": "INT-01",
+  "doi": "10.1016/0038-092x(60)90062-1",
+  "is_oa": false,
+  "oa_url": null,
+  "host": null,
+  "license": null
+ },
+ {
+  "id": "INT-02",
+  "doi": "10.1016/0038-092x(82)90302-4",
+  "is_oa": false,
+  "oa_url": null,
+  "host": null,
+  "license": null
+ },
+ {
+  "id": "INT-03",
+  "doi": "10.1016/0038-092x(90)90060-p",
+  "is_oa": false,
+  "oa_url": null,
+  "host": null,
+  "license": null
+ },
+ {
+  "id": "INT-04",
+  "doi": "10.1016/0038-092x(87)90049-1",
+  "is_oa": false,
+  "oa_url": null,
+  "host": null,
+  "license": null
+ },
+ {
+  "id": "INT-05",
+  "doi": "10.1016/0038-092x(79)90100-2",
+  "is_oa": false,
+  "oa_url": null,
+  "host": null,
+  "license": null
+ },
+ {
+  "id": "INT-06",
+  "doi": "10.1016/0038-092x(90)90055-h",
+  "is_oa": true,
+  "oa_url": "https://www.sciencedirect.com/science/article/pii/0038092X9090055H",
+  "host": "publisher",
+  "license": null
+ },
+ {
+  "id": "INT-07",
+  "doi": "10.1016/0038-092x(79)90110-5",
+  "is_oa": false,
+  "oa_url": null,
+  "host": null,
+  "license": null
+ },
+ {
+  "id": "INT-08",
+  "doi": "10.1016/0038-092x(63)90006-9",
+  "is_oa": false,
+  "oa_url": null,
+  "host": null,
+  "license": null
+ },
+ {
+  "id": "INT-09",
+  "doi": "10.1016/0038-092x(78)90171-8",
+  "is_oa": false,
+  "oa_url": null,
+  "host": null,
+  "license": null
+ },
+ {
+  "id": "INT-10",
+  "doi": "10.1016/0038-092x(79)90163-4",
+  "is_oa": true,
+  "oa_url": "https://digital.library.unt.edu/ark:/67531/metadc303818/m2/1/high_res_d/metadc303818.pdf",
+  "host": "repository",
+  "license": null
+ },
+ {
+  "id": "INT-11",
+  "doi": "10.1115/1.3266379",
+  "is_oa": false,
+  "oa_url": null,
+  "host": null,
+  "license": null
+ },
+ {
+  "id": "INT-12",
+  "doi": "10.1016/0038-092x(92)90068-l",
+  "is_oa": false,
+  "oa_url": null,
+  "host": null,
+  "license": null
+ },
+ {
+  "id": "INT-13",
+  "doi": "10.1016/0038-092x(90)90137-2",
+  "is_oa": false,
+  "oa_url": null,
+  "host": null,
+  "license": null
+ },
+ {
+  "id": "INT-14",
+  "doi": "10.1002/9781118671603",
+  "is_oa": true,
+  "oa_url": "http://infoscience.epfl.ch/record/1114",
+  "host": "repository",
+  "license": "cc-by-nc-nd"
+ }
+]
